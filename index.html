@@ -845,11 +845,11 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
         <!-- Status de Conexão -->
         <div style="display: flex; flex-direction: column; align-items: flex-end;">
-          <span id="sync-status" class="sync-status-badge offline" title="Os dados estão salvos neste aparelho. Configure a sincronização para usar em outros dispositivos.">
+          <span id="sync-status" class="sync-status-badge offline" title="Alterações salvas neste aparelho; serão enviadas assim que a conexão voltar.">
             <span id="sync-dot">🟠</span> <span id="sync-text">Offline — dados locais</span>
           </span>
           <span id="sync-subtext" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; text-align: right; max-width: 220px; line-height: 1.2;">
-            Os dados estão salvos neste aparelho. Configure a sincronização para usar em outros dispositivos.
+            Alterações salvas neste aparelho; serão enviadas assim que a conexão voltar.
           </span>
         </div>
 
@@ -1487,115 +1487,88 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
   </main>
 
-  <!-- MODAL: SINCRONIZAÇÃO GOOGLE SHEETS / NUVEM -->
+  <!-- MODAL: CONTA E SINCRONIZAÇÃO -->
   <div class="modal-backdrop" id="modal-sync" style="display: none;">
-    <div class="modal-box modal-lg" style="max-height: 85vh;">
+    <div class="modal-box" style="max-height: 85vh;">
       <div class="modal-header">
-        <h3 class="modal-title">⚙️ Sincronização em Nuvem (Google Apps Script)</h3>
+        <h3 class="modal-title">⚙️ Conta & Sincronização</h3>
         <button type="button" class="btn-close" id="btn-close-sync">✕</button>
       </div>
 
-      <div style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.45; margin-bottom: 1.25rem; font-weight: 500;">
-        ⚠️ Configure esta mesma URL em CADA aparelho (celular, tablet, computador) uma única vez. A partir daí, todos os dados sincronizam automaticamente entre eles.
-      </div>
-
-      <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-top: 0;">
-        Sincronize automaticamente alunos, professores, histórico de avaliações e configurações em tempo real entre celulares, tablets e computadores.
-      </p>
-
-      <!-- Status atual dentro do modal -->
-      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-        <div style="display: flex; align-items: center; gap: 0.6rem;">
-          <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">Status da Nuvem:</span>
-          <span id="modal-sync-status-badge" class="sync-status-badge offline">
-            <span id="modal-sync-dot">🟠</span> <span id="modal-sync-text">Offline — dados locais</span>
-          </span>
+      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+          <div style="display: flex; align-items: center; gap: 0.6rem;">
+            <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">Status:</span>
+            <span id="modal-sync-status-badge" class="sync-status-badge offline">
+              <span id="modal-sync-dot">🟠</span> <span id="modal-sync-text">Offline — dados locais</span>
+            </span>
+          </div>
+          <div id="modal-last-sync-time" style="font-size: 0.78rem; color: var(--text-muted);">
+            Última sincronização: Nunca
+          </div>
         </div>
-        <div id="modal-last-sync-time" style="font-size: 0.78rem; color: var(--text-muted);">
-          Última sincronização: Nunca
+        <div style="margin-top: 0.7rem; padding-top: 0.7rem; border-top: 1px dashed var(--border-subtle); font-size: 0.85rem;">
+          <span style="color: var(--text-muted);">Conectado como</span>
+          <strong id="conta-email" style="color: var(--text-main);">—</strong>
         </div>
       </div>
 
-      <div class="form-group" style="margin-bottom: 0.75rem;">
-        <label for="input-sync-url">URL do Google Apps Script (Web App)</label>
-        <input type="url" id="input-sync-url" class="form-input" placeholder="https://script.google.com/macros/s/.../exec">
+      <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem;">
+        <button type="button" class="btn-act btn-outline-primary btn-sm" id="btn-sync-agora">🔄 Sincronizar Agora</button>
+        <button type="button" class="btn-act btn-outline btn-sm" id="btn-sair">🚪 Sair desta conta</button>
       </div>
 
-      <!-- Feedback de teste -->
       <div id="sync-test-feedback" style="display: none; font-size: 0.82rem; padding: 0.6rem 0.85rem; border-radius: 6px; margin-bottom: 1rem;"></div>
 
-      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button type="button" class="btn-act btn-outline btn-sm" id="btn-testar-sync">🔍 Testar Conexão</button>
-          <button type="button" class="btn-act btn-outline-primary btn-sm" id="btn-sync-agora">🔄 Sincronizar Agora</button>
-        </div>
-        <button type="button" class="btn-act btn-primary" id="btn-salvar-sync">💾 Salvar e Sincronizar</button>
-      </div>
-
       <div style="background: #f0fdfa; border: 1px solid var(--accent-border); border-radius: 8px; padding: 0.85rem; font-size: 0.82rem; color: #115e59; line-height: 1.45; margin-bottom: 1.25rem;">
-        🔒 <strong>Armazenamento Seguro e Disponível Offline:</strong> Sem a URL, todos os dados continuam salvos de forma segura apenas neste navegador. Caso fique sem internet, o uso da página continua normal e as alterações serão enviadas assim que a conexão retornar.
+        🔒 <strong>Como os dados ficam guardados:</strong> tudo é salvo primeiro neste aparelho e sincronizado
+        com a nuvem do instituto em seguida. Se a internet cair no meio de um teste, o app continua
+        funcionando normalmente e envia as alterações assim que a conexão voltar.
       </div>
 
-      <!-- Cópia de Segurança / Backup -->
-      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         <div>
-          <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">💾 Cópia de Segurança Local (Backup)</div>
-          <div style="font-size: 0.78rem; color: var(--text-muted);">Exporte ou importe arquivos de backup em formato JSON.</div>
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">💾 Cópia de Segurança Local</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">Exporte ou importe um arquivo .json com toda a base.</div>
         </div>
         <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button type="button" class="btn-act btn-outline btn-sm" id="btn-exportar-backup">📤 Exportar Backup (.json)</button>
-          <button type="button" class="btn-act btn-outline btn-sm" id="btn-importar-backup">📥 Importar Backup (.json)</button>
+          <button type="button" class="btn-act btn-outline btn-sm" id="btn-exportar-backup">📤 Exportar</button>
+          <button type="button" class="btn-act btn-outline btn-sm" id="btn-importar-backup">📥 Importar</button>
           <input type="file" id="input-import-backup" accept=".json" style="display: none;">
         </div>
       </div>
+    </div>
+  </div>
 
-      <!-- Instruções Passo a Passo Colapsáveis -->
-      <details class="clinical-guide" style="border-radius: 8px; font-size: 0.85rem;">
-        <summary style="font-size: 0.85rem; padding: 0.75rem 1rem; color: var(--accent); font-weight: 700;">
-          📘 Como configurar o Google Apps Script (passo a passo)
-        </summary>
-        <div class="content" style="padding: 1rem; line-height: 1.6; color: #334155;">
-          <ol style="margin: 0 0 1rem 1.25rem; padding: 0;">
-            <li style="margin-bottom: 0.4rem;">Crie uma planilha no Google Sheets (ex.: <em>"Instituto Moove — Dados"</em>).</li>
-            <li style="margin-bottom: 0.4rem;">No menu superior da planilha, clique em <strong>Extensões → Apps Script</strong>.</li>
-            <li style="margin-bottom: 0.4rem;">Substitua todo o código do arquivo <code>Código.gs</code> pelo script fornecido abaixo.</li>
-            <li style="margin-bottom: 0.4rem;">No canto superior direito, clique em <strong>Implantar → Nova implantação</strong>. Selecione o tipo de engrenagem <strong>Aplicativo da Web</strong>.</li>
-            <li style="margin-bottom: 0.4rem;">Defina <strong>Executar como:</strong> <em>"Eu"</em> e <strong>Quem tem acesso:</strong> <em>"Qualquer pessoa"</em> (Anyone).</li>
-            <li style="margin-bottom: 0.4rem;">Clique em <strong>Implantar</strong>, autorize as permissões da sua conta Google, copie a <strong>URL do aplicativo da web</strong> (termina em <code>/exec</code>) e cole no campo acima.</li>
-          </ol>
+  <!-- TELA DE LOGIN -->
+  <div id="tela-login" style="display: none; position: fixed; inset: 0; z-index: 2000; background: var(--bg-page); align-items: center; justify-content: center; padding: 1rem;">
+    <div style="width: 100%; max-width: 380px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 14px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.08); padding: 2rem;">
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent); letter-spacing: -0.02em;">INSTITUTO MOOVE</div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">Teste de VO₂ Máximo</div>
+      </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
-            <span style="font-weight: 700; font-size: 0.8rem; color: var(--text-main);">Código Google Apps Script pronto para copiar:</span>
-            <button type="button" class="btn-act btn-outline btn-sm" id="btn-copiar-script" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">📋 Copiar Código</button>
-          </div>
-          <pre id="code-apps-script" style="background: #1e293b; color: #e2e8f0; padding: 0.85rem; border-radius: 6px; font-size: 0.78rem; overflow-x: auto; max-height: 220px; font-family: monospace; line-height: 1.4;">function doGet(e) {
-  var prop = PropertiesService.getScriptProperties();
-  var raw = prop.getProperty("MOOVE_DATA");
-  var payload = raw ? JSON.parse(raw) : {
-    alunos: [],
-    professores: [],
-    avaliacoes: [],
-    config: {},
-    excluidos: { alunos: [], professores: [], avaliacoes: [] }
-  };
-  return ContentService.createTextOutput(JSON.stringify(payload))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  try {
-    var body = e.postData.contents;
-    var parsed = JSON.parse(body);
-    PropertiesService.getScriptProperties().setProperty("MOOVE_DATA", JSON.stringify(parsed));
-    return ContentService.createTextOutput(JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  } catch(err) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", error: err.toString() }))
-      .setMimeType(ContentService.MimeType.JSON);
-  }
-}</pre>
+      <form id="form-login">
+        <div class="form-group" style="margin-bottom: 0.85rem;">
+          <label for="login-email">E-mail</label>
+          <input type="email" id="login-email" class="form-input" autocomplete="username" required placeholder="professor@institutomoove.com.br">
         </div>
-      </details>
+        <div class="form-group" style="margin-bottom: 1.15rem;">
+          <label for="login-senha">Senha</label>
+          <input type="password" id="login-senha" class="form-input" autocomplete="current-password" required placeholder="••••••••">
+        </div>
+
+        <div id="login-erro" style="display: none; font-size: 0.82rem; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; padding: 0.6rem 0.85rem; margin-bottom: 1rem;"></div>
+
+        <button type="submit" class="btn-act btn-primary btn-lg" id="btn-login" style="width: 100%; justify-content: center;">
+          Entrar
+        </button>
+      </form>
+
+      <div style="font-size: 0.78rem; color: var(--text-muted); text-align: center; margin-top: 1.25rem; line-height: 1.45;">
+        Acesso restrito aos avaliadores do instituto.<br>
+        Esqueceu a senha? Procure o responsável pelo sistema.
+      </div>
     </div>
   </div>
 
@@ -1962,7 +1935,6 @@ function doPost(e) {
         avaliacoes: []
       },
       config: {
-        sheetsUrl: '',
         protocolo: {
           velocidadeInicial: 8.0,
           totalEstagios: 12,
@@ -2202,7 +2174,7 @@ function doPost(e) {
 
     // GATILHO DE DEBOUNCE DE 2 SEGUNDOS
     function queueDebouncedSync() {
-      if (!appState.config.sheetsUrl || !appState.config.sheetsUrl.startsWith('http')) {
+      if (!temSessao()) {
         updateSyncStatusUI('offline');
         return;
       }
@@ -2255,7 +2227,7 @@ function doPost(e) {
         if (statusEl) statusEl.className = 'sync-status-badge offline';
         if (dotEl) dotEl.textContent = '🟠';
         if (txtEl) txtEl.textContent = text;
-        if (subtxtEl) subtxtEl.textContent = 'Os dados estão salvos neste aparelho. Configure a sincronização para usar em outros dispositivos.';
+        if (subtxtEl) subtxtEl.textContent = 'Alterações salvas neste aparelho; serão enviadas assim que a conexão voltar.';
         if (mStatusEl) mStatusEl.className = 'sync-status-badge offline';
         if (mDotEl) mDotEl.textContent = '🟠';
         if (mTxtEl) mTxtEl.textContent = text;
@@ -2388,147 +2360,271 @@ function doPost(e) {
       return Array.from(map.values());
     }
 
-    // EXECUÇÃO COM RETRY E BACKOFF EXPONENCIAL (2s, 4s, 8s)
-    async function executeWithRetry(asyncFn, maxRetries = 3, delays = [2000, 4000, 8000]) {
-      for (let attempt = 0; attempt <= maxRetries; attempt++) {
-        try {
-          return await asyncFn();
-        } catch (err) {
-          if (attempt < maxRetries) {
-            await new Promise(res => setTimeout(res, delays[attempt] || 2000));
-          } else {
-            throw err;
-          }
+    // --- SUPABASE: SESSÃO E SINCRONIZAÇÃO ---
+
+    // A chave anon é pública por definição: ela identifica o projeto, não
+    // autoriza nada. Quem autoriza é o Row Level Security, que só entrega dados
+    // a quem tem sessão E está cadastrado como professor ativo. É por isso que
+    // ela pode viver no código de um repositório aberto.
+    const SUPABASE_URL = 'https://pbmveouilfkqnbyglyom.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBibXZlb3VpbGZrcW5ieWdseW9tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAzNjg1MjAsImV4cCI6MjEwNTk0NDUyMH0.o3Y3315_K0f3s8b_X9loPVlzYNKPei5iZLXhSAVzrsE';
+    const SESSAO_KEY = 'moove_sessao';
+
+    function carregarSessao() {
+      try {
+        const raw = localStorage.getItem(SESSAO_KEY);
+        return raw ? JSON.parse(raw) : null;
+      } catch (e) { return null; }
+    }
+
+    function salvarSessao(s) {
+      try {
+        if (s) localStorage.setItem(SESSAO_KEY, JSON.stringify(s));
+        else localStorage.removeItem(SESSAO_KEY);
+      } catch (e) { /* aba anônima ou armazenamento bloqueado */ }
+      appState.sessao = s;
+    }
+
+    appState.sessao = carregarSessao();
+
+    // "Ter sessão" e "ter token válido" são coisas distintas de propósito. Se o
+    // wi-fi cair no meio de um teste na esteira, o token expira e não há como
+    // renovar — e expulsar o professor da tela nesse momento custaria o teste
+    // em andamento. Então a interface abre com sessão guardada, mesmo vencida,
+    // e apenas a sincronização exige token válido.
+    function temSessao() {
+      return !!(appState.sessao && appState.sessao.refresh_token);
+    }
+
+    function tokenValido() {
+      const s = appState.sessao;
+      return !!(s && s.access_token && s.expira_em && Date.now() < s.expira_em - 60000);
+    }
+
+    function guardarTokens(d) {
+      salvarSessao({
+        access_token: d.access_token,
+        refresh_token: d.refresh_token,
+        expira_em: Date.now() + ((d.expires_in || 3600) * 1000),
+        email: (d.user && d.user.email) || (appState.sessao && appState.sessao.email) || ''
+      });
+    }
+
+    async function entrar(email, senha) {
+      const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=password', {
+        method: 'POST',
+        headers: { apikey: SUPABASE_ANON, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: senha })
+      });
+      const dados = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(dados.error_description || dados.msg || dados.message || 'Não foi possível entrar.');
+      }
+      guardarTokens(dados);
+      return dados;
+    }
+
+    async function renovarToken() {
+      const s = appState.sessao;
+      if (!s || !s.refresh_token) return false;
+      try {
+        const res = await fetch(SUPABASE_URL + '/auth/v1/token?grant_type=refresh_token', {
+          method: 'POST',
+          headers: { apikey: SUPABASE_ANON, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: s.refresh_token })
+        });
+        if (!res.ok) {
+          // 400 significa refresh token revogado ou vencido de vez: a sessão
+          // morreu e insistir só repetiria o erro. Qualquer outra falha (rede
+          // fora, servidor instável) preserva a sessão para tentar mais tarde.
+          if (res.status === 400) salvarSessao(null);
+          return false;
         }
+        guardarTokens(await res.json());
+        return true;
+      } catch (e) {
+        return false;
       }
     }
 
-    // 3. FUNÇÃO syncNow() COMPLETA (CORS CORRETO, RETRY E NUNCA EXIBE JSON NO DOM)
-    async function syncNow() {
-      const url = appState.config.sheetsUrl ? appState.config.sheetsUrl.trim() : '';
-
-      if (!url || !url.startsWith('http')) {
-        updateSyncStatusUI('offline');
-        return false;
+    async function sair() {
+      const s = appState.sessao;
+      if (s && s.access_token) {
+        try {
+          await fetch(SUPABASE_URL + '/auth/v1/logout', {
+            method: 'POST',
+            headers: { apikey: SUPABASE_ANON, Authorization: 'Bearer ' + s.access_token }
+          });
+        } catch (e) { /* sair localmente vale mesmo sem rede */ }
       }
+      salvarSessao(null);
+      location.reload();
+    }
 
-      if (appState.isSyncing) return false;
+    async function supa(caminho, opcoes) {
+      opcoes = opcoes || {};
+      if (!tokenValido() && !(await renovarToken())) throw new Error('sem sessão válida');
+      const res = await fetch(SUPABASE_URL + '/rest/v1/' + caminho, Object.assign({}, opcoes, {
+        headers: Object.assign({
+          apikey: SUPABASE_ANON,
+          Authorization: 'Bearer ' + appState.sessao.access_token,
+          'Content-Type': 'application/json'
+        }, opcoes.headers || {})
+      }));
+      if (!res.ok) throw new Error(res.status + ' ' + (await res.text()).slice(0, 200));
+      // Com Prefer: return=minimal o PostgREST responde 201 com corpo vazio, e
+      // res.json() sobre corpo vazio lanca excecao. Por isso o corpo e lido
+      // como texto antes de decidir se ha JSON para interpretar.
+      const corpo = await res.text();
+      return corpo ? JSON.parse(corpo) : null;
+    }
+
+    function num(v, padrao) {
+      if (padrao === undefined) padrao = null;
+      if (v === null || v === undefined || v === '') return padrao;
+      const n = parseFloat(v);
+      return isNaN(n) ? padrao : n;
+    }
+
+    // O app fala camelCase e o Postgres fala snake_case. Estes dois mapas são o
+    // único ponto do código onde os dois vocabulários se encontram.
+    const paraLinha = {
+      alunos: a => ({
+        id: a.id, nome: a.nome, idade: a.idade, sexo: a.sexo, peso: a.peso, altura: a.altura,
+        telefone: a.telefone || '', email: a.email || '',
+        criado_em: a.criadoEm || a.atualizadoEm, atualizado_em: a.atualizadoEm
+      }),
+      // user_id fica deliberadamente de fora: é a coluna que autoriza o acesso,
+      // o app não a conhece, e enviá-la vazia apagaria o vínculo do professor
+      // com a própria conta de login, trancando-o para fora do sistema.
+      professores: p => ({
+        id: p.id, nome: p.nome, cref: p.cref || '', telefone: p.telefone || p.tel || '',
+        email: p.email || '', ativo: p.ativo !== false, atualizado_em: p.atualizadoEm
+      }),
+      avaliacoes: ev => ({
+        id: ev.id, aluno_id: ev.alunoId, aluno_nome: ev.alunoNome || '', data: ev.data,
+        realizado_em: ev.timestamp || null,
+        vel_final: num(ev.velFinal !== undefined ? ev.velFinal : ev.velocidadeFinal),
+        vo2_max: num(ev.vo2Max !== undefined ? ev.vo2Max : ev.vo2max),
+        mets_max: num(ev.metsMax),
+        duracao_segundos: ev.duracaoSegundos !== undefined ? ev.duracaoSegundos : (ev.duracaoTotal || null),
+        fc_pico: ev.fcPico || null,
+        fc_60s: ev.fc60s !== undefined ? ev.fc60s : (ev.fc60 || null),
+        fc_120s: ev.fc120s !== undefined ? ev.fc120s : (ev.fc120 || null),
+        queda_1min: ev.queda1min !== undefined ? ev.queda1min : (ev.queda1 || null),
+        queda_2min: ev.queda2min !== undefined ? ev.queda2min : (ev.queda2 || null),
+        classificacao: ev.classificacao || '', avaliador: ev.avaliador || '',
+        obs: ev.obs || ev.observacoesFinais || '',
+        estagios: ev.estagiosSnapshot || ev.estagios || [],
+        config_protocolo: ev.configProtocolo || {},
+        atualizado_em: ev.atualizadoEm
+      })
+    };
+
+    const paraApp = {
+      alunos: r => ({
+        id: r.id, nome: r.nome, idade: r.idade, sexo: r.sexo,
+        peso: num(r.peso, 0), altura: num(r.altura, 0),
+        telefone: r.telefone || '', email: r.email || '',
+        criadoEm: r.criado_em, atualizadoEm: r.atualizado_em
+      }),
+      professores: r => ({
+        id: r.id, nome: r.nome, cref: r.cref || '',
+        tel: r.telefone || '', telefone: r.telefone || '',
+        email: r.email || '', ativo: r.ativo !== false, atualizadoEm: r.atualizado_em
+      }),
+      avaliacoes: r => {
+        // Os numéricos caem para 0, e não para null, porque a interface chama
+        // toFixed() direto sobre eles em vários pontos do laudo e das tabelas.
+        const vel = num(r.vel_final, 0), vo2 = num(r.vo2_max, 0), mets = num(r.mets_max, 0);
+        return {
+          id: r.id, alunoId: r.aluno_id, alunoNome: r.aluno_nome || '', data: r.data,
+          timestamp: Number(r.realizado_em) || 0,
+          velFinal: vel, velocidadeFinal: vel,
+          vo2Max: vo2, vo2max: vo2, metsMax: mets,
+          duracaoSegundos: r.duracao_segundos || 0, duracaoTotal: r.duracao_segundos || 0,
+          fcPico: r.fc_pico, fc60s: r.fc_60s, fc60: r.fc_60s,
+          fc120s: r.fc_120s, fc120: r.fc_120s,
+          queda1min: r.queda_1min, queda1: r.queda_1min,
+          queda2min: r.queda_2min, queda2: r.queda_2min,
+          classificacao: r.classificacao || '', avaliador: r.avaliador || '',
+          obs: r.obs || '', observacoesFinais: r.obs || '',
+          estagiosSnapshot: r.estagios || [], estagios: r.estagios || [],
+          configProtocolo: r.config_protocolo || {},
+          atualizadoEm: r.atualizado_em
+        };
+      }
+    };
+
+    const COLECOES = ['alunos', 'professores', 'avaliacoes'];
+
+    // Sincroniza nos dois sentidos. A regra de conflito não mudou: segue sendo
+    // mergeColecao(), com o registro de 'atualizadoEm' mais recente vencendo.
+    // O que mudou foi apenas o transporte.
+    async function syncNow() {
+      if (!temSessao() || appState.isSyncing) return false;
       appState.isSyncing = true;
-
       try {
-        // 1. GET para buscar dados da nuvem com Retry Backoff (2s, 4s, 8s)
-        let remoteData = null;
-        try {
-          remoteData = await executeWithRetry(async () => {
-            const getRes = await fetch(url, { method: 'GET', cache: 'no-store' });
-            if (!getRes.ok) throw new Error(`HTTP ${getRes.status}`);
-            const json = await getRes.json();
-            return (json && json.data && typeof json.data === 'object') ? json.data : (json && typeof json === 'object' ? json : null);
-          }, 3, [2000, 4000, 8000]);
-        } catch (getErr) {
-          console.warn('Falha na busca GET na nuvem após retries:', getErr);
+        // 1. Lápides primeiro, nos dois sentidos. Aplicar as exclusões antes de
+        // mesclar impede que um registro apagado em outro aparelho ressuscite
+        // nesta mesma rodada, vindo do aparelho que ainda o tinha.
+        const excRemotas = await supa('excluidos?select=tipo,registro_id');
+        excRemotas.forEach(e => registrarExclusao(e.tipo, e.registro_id));
+
+        const lapides = [];
+        COLECOES.forEach(tipo => {
+          (appState.excluidos[tipo] || []).forEach(id => lapides.push({ tipo: tipo, registro_id: id }));
+        });
+        if (lapides.length) {
+          await supa('excluidos?on_conflict=tipo,registro_id', {
+            method: 'POST',
+            headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+            body: JSON.stringify(lapides)
+          });
         }
 
-        let localMudou = false;
-
-        // Se obteve objeto válido da nuvem, mescla com dados locais
-        if (remoteData && typeof remoteData === 'object') {
-          const remExc = remoteData.excluidos || {};
-          appState.excluidos.alunos = Array.from(new Set([...(appState.excluidos.alunos || []), ...(remExc.alunos || [])]));
-          appState.excluidos.professores = Array.from(new Set([...(appState.excluidos.professores || []), ...(remExc.professores || [])]));
-          appState.excluidos.avaliacoes = Array.from(new Set([...(appState.excluidos.avaliacoes || []), ...(remExc.avaliacoes || [])]));
-
-          if (Array.isArray(remoteData.alunos)) {
-            const merged = mergeColecao(appState.alunos, remoteData.alunos, appState.excluidos.alunos);
-            if (JSON.stringify(merged) !== JSON.stringify(appState.alunos)) localMudou = true;
-            appState.alunos = merged;
-          }
-          if (Array.isArray(remoteData.professores)) {
-            const merged = mergeColecao(appState.professores, remoteData.professores, appState.excluidos.professores);
-            if (JSON.stringify(merged) !== JSON.stringify(appState.professores)) localMudou = true;
-            appState.professores = merged;
-          }
-          if (Array.isArray(remoteData.avaliacoes)) {
-            const merged = mergeColecao(appState.avaliacoes, remoteData.avaliacoes, appState.excluidos.avaliacoes);
-            if (JSON.stringify(merged) !== JSON.stringify(appState.avaliacoes)) localMudou = true;
-            appState.avaliacoes = merged;
-          }
-
-          if (remoteData.config && (remoteData.config.estagios || remoteData.config.velocidadeInicial !== undefined || remoteData.config.protocolo)) {
-            const rCfg = remoteData.config;
-            const rProt = remoteData.config.protocolo || {};
-            if (rCfg.velocidadeInicial !== undefined || rProt.velocidadeInicial !== undefined) {
-              appState.config.protocolo.velocidadeInicial = parseFloat(rCfg.velocidadeInicial !== undefined ? rCfg.velocidadeInicial : rProt.velocidadeInicial) || 8.0;
-            }
-            if (rCfg.estagios || rProt.totalEstagios) {
-              appState.config.protocolo.totalEstagios = parseInt(rCfg.estagios || rProt.totalEstagios, 10) || appState.config.protocolo.totalEstagios;
-            }
-            if (rCfg.tempoEstagio || rProt.tempoEstagio) {
-              appState.config.protocolo.tempoEstagio = parseInt(rCfg.tempoEstagio || rProt.tempoEstagio, 10) || appState.config.protocolo.tempoEstagio;
-            }
-            if (rCfg.incremento !== undefined || rProt.incrementoVel !== undefined) {
-              appState.config.protocolo.incrementoVel = parseFloat(rCfg.incremento !== undefined ? rCfg.incremento : rProt.incrementoVel) || appState.config.protocolo.incrementoVel;
-            }
-          }
-
-          saveStorage(false);
-          renderAlunosTable(document.getElementById('input-busca-aluno')?.value || '');
-          renderProfessores();
-          renderHistorico();
-          renderEnvioSection();
-        }
-
-        // 2. Envia POST com o payload completo mesclado
-        // Usar headers: { 'Content-Type': 'text/plain' } (NUNCA application/json)
-        const payload = buildSyncPayload();
-        let postSuccess = false;
-
-        try {
-          await executeWithRetry(async () => {
-            const postRes = await fetch(url, {
+        // 2. Puxa, mescla e devolve cada coleção.
+        for (const tipo of COLECOES) {
+          const remotos = (await supa(tipo + '?select=*')).map(paraApp[tipo]);
+          appState[tipo] = mergeColecao(appState[tipo], remotos, appState.excluidos[tipo]);
+          const linhas = appState[tipo].map(paraLinha[tipo]);
+          if (linhas.length) {
+            await supa(tipo + '?on_conflict=id', {
               method: 'POST',
-              headers: { 'Content-Type': 'text/plain' },
-              body: JSON.stringify(payload)
+              headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+              body: JSON.stringify(linhas)
             });
-            if (postRes.ok || postRes.type === 'opaque') {
-              try { await postRes.json(); } catch (_) {}
-              return true;
-            }
-            throw new Error(`POST status ${postRes.status}`);
-          }, 3, [2000, 4000, 8000]);
-          postSuccess = true;
-        } catch (postErr) {
-          // Tenta modo fallback no-cors se fetch normal falhou por política de redirecionamento
-          try {
-            await fetch(url, {
-              method: 'POST',
-              mode: 'no-cors',
-              headers: { 'Content-Type': 'text/plain' },
-              body: JSON.stringify(payload)
-            });
-            postSuccess = true;
-          } catch (fallbackErr) {
-            console.warn('Falha no envio POST:', fallbackErr);
           }
         }
 
-        if (postSuccess || remoteData) {
-          const nowIso = new Date().toISOString();
-          appState.lastSyncTimestamp = nowIso;
-          localStorage.setItem('moove_ultima_sync', nowIso);
-          updateSyncStatusUI('online');
-          appState.isSyncing = false;
-          return true;
-        } else {
-          updateSyncStatusUI('offline');
-          appState.isSyncing = false;
-          return false;
+        // 3. Apaga no servidor o que está marcado como excluído. Alunos levam
+        // junto suas avaliações, por cascade declarado no schema.
+        for (const tipo of COLECOES) {
+          const ids = appState.excluidos[tipo] || [];
+          if (!ids.length) continue;
+          const lista = ids.map(id => '"' + id + '"').join(',');
+          await supa(tipo + '?id=in.(' + encodeURIComponent(lista) + ')', {
+            method: 'DELETE', headers: { Prefer: 'return=minimal' }
+          });
         }
+
+        saveStorage(false);
+        renderAlunosTable((document.getElementById('input-busca-aluno') || {}).value || '');
+        renderProfessores();
+        renderHistorico();
+        renderEnvioSection();
+
+        const agora = new Date().toISOString();
+        appState.lastSyncTimestamp = agora;
+        localStorage.setItem('moove_ultima_sync', agora);
+        updateSyncStatusUI('online');
+        return true;
       } catch (e) {
-        console.warn('Falha na sincronização (mantendo dados locais):', e);
+        console.warn('Sincronização adiada (dados seguem salvos neste aparelho):', e.message);
         updateSyncStatusUI('offline');
-        appState.isSyncing = false;
         return false;
+      } finally {
+        appState.isSyncing = false;
       }
     }
 
@@ -2591,7 +2687,7 @@ function doPost(e) {
 
           alert(`Backup importado: ${numAlunos} alunos, ${numProfs} professores, ${numAvals} avaliações.`);
 
-          if (appState.config.sheetsUrl) {
+          if (temSessao()) {
             syncNow();
           }
         } catch (err) {
@@ -3838,9 +3934,57 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     }
+    // O Supabase devolve as mensagens de erro em inglês e em jargão de API.
+    // Quem lê esta tela é um professor no meio do expediente.
+    function traduzErroLogin(msg) {
+      const m = (msg || '').toLowerCase();
+      if (m.includes('invalid login')) return 'E-mail ou senha incorretos.';
+      if (m.includes('email not confirmed')) return 'Esta conta ainda não foi confirmada. Procure o responsável pelo sistema.';
+      if (m.includes('too many requests') || m.includes('rate limit')) return 'Muitas tentativas seguidas. Aguarde um minuto e tente de novo.';
+      if (m.includes('failed to fetch') || m.includes('networkerror')) return 'Sem conexão com a internet. O primeiro acesso neste aparelho precisa de rede.';
+      return msg || 'Não foi possível entrar.';
+    }
+
+    // Fica fora do bloco de inicialização do app porque precisa funcionar
+    // justamente na situação em que o app não é inicializado: sem sessão.
+    function configurarLogin() {
+      const form = document.getElementById('form-login');
+      if (!form) return;
+      const erro = document.getElementById('login-erro');
+      const botao = document.getElementById('btn-login');
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        erro.style.display = 'none';
+        botao.disabled = true;
+        botao.textContent = 'Entrando...';
+        try {
+          await entrar(
+            document.getElementById('login-email').value.trim(),
+            document.getElementById('login-senha').value
+          );
+          // Recarrega para o app subir já com a sessão em mãos, em vez de
+          // repetir aqui toda a sequência de carga, renderização e sincronia.
+          location.reload();
+        } catch (err) {
+          erro.textContent = traduzErroLogin(err.message);
+          erro.style.display = 'block';
+          botao.disabled = false;
+          botao.textContent = 'Entrar';
+        }
+      });
+    }
+
 
     // INICIALIZAÇÃO DE EVENTOS
     document.addEventListener('DOMContentLoaded', () => {
+      configurarLogin();
+      if (!temSessao()) {
+        // Sem sessao o app nao inicializa: nao ha dados a mostrar, porque o
+        // RLS nao entrega nada sem um professor autenticado por tras.
+        document.getElementById('tela-login').style.display = 'flex';
+        return;
+      }
       loadStorage();
       appState.tempoRestanteNoEstagio = appState.config.protocolo.tempoEstagio;
       appState.estagiosDados = buildEmptyEstagios();
@@ -3914,7 +4058,7 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
       });
 
       // Sincronização inicial e agendamentos
-      if (appState.config.sheetsUrl && appState.config.sheetsUrl.startsWith('http')) {
+      if (temSessao()) {
         syncNow();
       } else {
         updateSyncStatusUI('offline');
@@ -3922,7 +4066,7 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
 
       // Sincronização automática a cada 30 segundos
       setInterval(() => {
-        if (appState.config.sheetsUrl && appState.config.sheetsUrl.startsWith('http')) {
+        if (temSessao()) {
           syncNow();
         }
       }, 30000);
@@ -3981,125 +4125,54 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
         window.print();
       });
 
-      // Modal Sincronização Google Sheets / Nuvem
+      // Modal de Conta & Sincronização
+      function mostrarFeedbackSync(texto, tom) {
+        const el = document.getElementById('sync-test-feedback');
+        if (!el) return;
+        const cores = {
+          neutro:  ['#f8fafc', '#475569', '#cbd5e1'],
+          sucesso: ['#ecfdf5', '#065f46', '#a7f3d0'],
+          erro:    ['#fef2f2', '#991b1b', '#fecaca']
+        };
+        const [fundo, cor, borda] = cores[tom] || cores.neutro;
+        el.style.display = 'block';
+        el.style.background = fundo;
+        el.style.color = cor;
+        el.style.border = '1px solid ' + borda;
+        el.textContent = texto;
+      }
+
       document.getElementById('btn-open-sync').addEventListener('click', () => {
-        document.getElementById('input-sync-url').value = appState.config.sheetsUrl || '';
-        const feedback = document.getElementById('sync-test-feedback');
-        if (feedback) feedback.style.display = 'none';
+        const email = (appState.sessao && appState.sessao.email) || '—';
+        document.getElementById('conta-email').textContent = email;
+        const fb = document.getElementById('sync-test-feedback');
+        if (fb) fb.style.display = 'none';
         document.getElementById('modal-sync').style.display = 'flex';
       });
+
       document.getElementById('btn-close-sync').addEventListener('click', () => {
         document.getElementById('modal-sync').style.display = 'none';
       });
 
-      // Salvar e Sincronizar
-      document.getElementById('btn-salvar-sync').addEventListener('click', async () => {
-        const urlDigitada = document.getElementById('input-sync-url').value.trim();
-        appState.config.sheetsUrl = urlDigitada;
-        saveStorage(false);
-        const feedback = document.getElementById('sync-test-feedback');
-        feedback.style.display = 'block';
-        feedback.style.background = '#f0fdfa';
-        feedback.style.color = '#0f766e';
-        feedback.style.border = '1px solid #99f6e4';
-        feedback.textContent = 'Configuração salva! Sincronizando...';
-
-        const ok = await syncNow();
-        if (ok) {
-          feedback.style.background = '#ecfdf5';
-          feedback.style.color = '#065f46';
-          feedback.style.border = '1px solid #a7f3d0';
-          feedback.textContent = '✅ Conexão OK — dados sincronizados';
-        } else {
-          feedback.style.background = '#fef2f2';
-          feedback.style.color = '#991b1b';
-          feedback.style.border = '1px solid #fecaca';
-          feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
-        }
-      });
-
-      // Botão Sincronizar Agora no modal
       document.getElementById('btn-sync-agora').addEventListener('click', async () => {
-        const urlDigitada = document.getElementById('input-sync-url').value.trim();
-        if (urlDigitada) {
-          appState.config.sheetsUrl = urlDigitada;
-          saveStorage(false);
-        }
-        const feedback = document.getElementById('sync-test-feedback');
-        feedback.style.display = 'block';
-        feedback.style.background = '#f8fafc';
-        feedback.style.color = '#475569';
-        feedback.style.border = '1px solid #cbd5e1';
-        feedback.textContent = 'Sincronizando...';
-
+        mostrarFeedbackSync('Sincronizando...', 'neutro');
         const ok = await syncNow();
-        if (ok) {
-          feedback.style.background = '#ecfdf5';
-          feedback.style.color = '#065f46';
-          feedback.style.border = '1px solid #a7f3d0';
-          feedback.textContent = '✅ Conexão OK — dados sincronizados';
-        } else {
-          feedback.style.background = '#fef2f2';
-          feedback.style.color = '#991b1b';
-          feedback.style.border = '1px solid #fecaca';
-          feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
-        }
+        mostrarFeedbackSync(
+          ok ? '✅ Tudo sincronizado com a nuvem do instituto.'
+             : '❌ Não foi possível sincronizar agora. Os dados seguem salvos neste aparelho.',
+          ok ? 'sucesso' : 'erro'
+        );
       });
 
-      // Botão Testar Conexão (APENAS MENSAGENS AMIGÁVEIS - NUNCA EXIBE JSON)
-      document.getElementById('btn-testar-sync').addEventListener('click', async () => {
-        const url = document.getElementById('input-sync-url').value.trim();
-        const feedback = document.getElementById('sync-test-feedback');
-        feedback.style.display = 'block';
-
-        if (!url || !url.startsWith('http')) {
-          feedback.style.background = '#fef2f2';
-          feedback.style.color = '#991b1b';
-          feedback.style.border = '1px solid #fecaca';
-          feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
+      document.getElementById('btn-sair').addEventListener('click', () => {
+        if (appState.testActive) {
+          alert('Há um teste em andamento. Encerre o teste antes de sair da conta.');
           return;
         }
-
-        feedback.style.background = '#f8fafc';
-        feedback.style.color = '#475569';
-        feedback.style.border = '1px solid #cbd5e1';
-        feedback.textContent = 'Testando conexão...';
-
-        try {
-          const res = await fetch(url, { method: 'GET', cache: 'no-store' });
-          if (res.ok) {
-            try {
-              const data = await res.json();
-              if (data && typeof data === 'object') {
-                feedback.style.background = '#ecfdf5';
-                feedback.style.color = '#065f46';
-                feedback.style.border = '1px solid #a7f3d0';
-                feedback.textContent = '✅ Conexão OK — dados sincronizados';
-              } else {
-                feedback.style.background = '#fef2f2';
-                feedback.style.color = '#991b1b';
-                feedback.style.border = '1px solid #fecaca';
-                feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
-              }
-            } catch (jsonErr) {
-              feedback.style.background = '#fef2f2';
-              feedback.style.color = '#991b1b';
-              feedback.style.border = '1px solid #fecaca';
-              feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
-            }
-          } else {
-            feedback.style.background = '#fef2f2';
-            feedback.style.color = '#991b1b';
-            feedback.style.border = '1px solid #fecaca';
-            feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
-          }
-        } catch (err) {
-          feedback.style.background = '#fef2f2';
-          feedback.style.color = '#991b1b';
-          feedback.style.border = '1px solid #fecaca';
-          feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
-        }
+        if (!confirm('Sair desta conta neste aparelho?\n\nOs dados já sincronizados continuam na nuvem do instituto.')) return;
+        sair();
       });
+
 
       // Botões de Backup (Exportar / Importar)
       const btnExportar = document.getElementById('btn-exportar-backup');
