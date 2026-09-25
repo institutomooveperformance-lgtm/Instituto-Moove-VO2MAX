@@ -1,0 +1,4449 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Instituto Moove | Teste de VO₂ Máximo</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/basecoat-css@1.0.2/dist/basecoat.cdn.min.css">
+  <style>
+/* Skip artifact shell — fixed styles served beside every artifact.
+   Complements basecoat; artifacts override --accent for their own identity. */
+:root {
+  color-scheme: light dark;
+  --accent: #2563eb;
+  --accent-contrast: #ffffff;
+  --accent-text: color-mix(in srgb, var(--accent) 72%, #000);
+  --bg: #f8f9fb;
+  --surface: #ffffff;
+  --text: #14171f;
+  --text-muted: #5b6472;
+  --border: rgba(20, 23, 31, 0.10);
+  --radius: 10px;
+  --shadow: 0 1px 3px rgba(20, 23, 31, 0.08);
+  --space: 16px;
+}
+/* Theme resolution. Without data-theme the viewer's system preference decides,
+   as it always did. With it, the artifact's own choice wins in BOTH directions:
+   a page that hardcodes one palette must not be handed the opposite set of
+   tokens by the machine it happens to be opened on. The dark values appear
+   twice because a media query cannot be folded into a selector list.
+   The attribute sits inside :where() so these blocks keep the specificity of a
+   bare :root — the page's own <style> is linked after this file and must go on
+   overriding any token it wants, exactly as it could before. */
+@media (prefers-color-scheme: dark) {
+  :root:where(:not([data-theme="light"])) {
+    --accent-text: color-mix(in srgb, var(--accent) 78%, #fff);
+    --bg: #101318;
+    --surface: #181c23;
+    --text: #eef1f6;
+    --text-muted: #9aa4b2;
+    --border: rgba(238, 241, 246, 0.12);
+    --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  }
+}
+:root:where([data-theme="dark"]) {
+  color-scheme: dark;
+  --accent-text: color-mix(in srgb, var(--accent) 78%, #fff);
+  --bg: #101318;
+  --surface: #181c23;
+  --text: #eef1f6;
+  --text-muted: #9aa4b2;
+  --border: rgba(238, 241, 246, 0.12);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+:root:where([data-theme="light"]) { color-scheme: light; }
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+}
+img { max-width: 100%; display: block; }
+
+.shell-container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+.shell-section { padding: calc(var(--space) * 2) 0; }
+.shell-grid { display: grid; gap: var(--space); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.shell-toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: var(--space); }
+.shell-footer { padding: 24px 0 40px; color: var(--text-muted); font-size: 13px; }
+
+.shell-hero { padding: calc(var(--space) * 3) 0 calc(var(--space) * 2); }
+.shell-hero h1 { font-size: clamp(26px, 4vw, 40px); line-height: 1.15; margin: 0 0 10px; text-wrap: balance; }
+.shell-hero p { color: var(--text-muted); max-width: 60ch; margin: 0; }
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: var(--space);
+}
+
+.kpi { display: flex; flex-direction: column; gap: 4px; }
+.kpi .kpi-value { font-size: 28px; font-weight: 650; line-height: 1.1; }
+.kpi .kpi-label { font-size: 13px; color: var(--text-muted); }
+.kpi .kpi-delta { font-size: 12.5px; font-weight: 600; }
+.kpi .kpi-delta.up { color: #0a8f3c; }
+.kpi .kpi-delta.down { color: #cf3131; }
+
+table.shell-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+table.shell-table th {
+  text-align: left; font-size: 11.5px; letter-spacing: 0.05em; text-transform: uppercase;
+  color: var(--text-muted); font-weight: 600;
+}
+table.shell-table th, table.shell-table td { padding: 9px 12px 9px 0; border-bottom: 1px solid var(--border); }
+table.shell-table td.num, table.shell-table th.num { text-align: right; font-variant-numeric: tabular-nums; }
+table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 6%, transparent); }
+
+.chart-box { width: 100%; min-height: 220px; }
+.chart-box svg { width: 100%; height: auto; display: block; }
+
+.muted { color: var(--text-muted); }
+.accent { color: var(--accent-text); }
+.shell-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px;
+  background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent-text);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .shell-fade { animation: shell-fade 400ms ease both; }
+  @keyframes shell-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+}
+
+</style>
+  <style>
+    :root {
+      --accent: #0f766e;
+      --accent-hover: #115e59;
+      --accent-soft: #f0fdfa;
+      --accent-border: #99f6e4;
+      --border-subtle: #e2e8f0;
+      --card-bg: #ffffff;
+      --bg-page: #f8fafc;
+      --text-main: #0f172a;
+      --text-muted: #64748b;
+      --success: #15803d;
+      --warning: #b45309;
+      --danger: #b91c1c;
+    }
+
+    html, body {
+      overflow-x: hidden;
+      max-width: 100%;
+    }
+
+    body {
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Header styling */
+    .app-header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 1rem 1.5rem;
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+    }
+    .header-inner {
+      max-width: 1320px;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+    .brand-title {
+      font-size: 1.35rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--accent);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .brand-badge {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      border: 1px solid var(--accent-border);
+      font-weight: 700;
+    }
+    .brand-sub {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.15rem;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      flex-wrap: wrap;
+    }
+
+    .sync-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.35rem 0.75rem;
+      border-radius: 9999px;
+      background: #f1f5f9;
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+    }
+    .sync-status-badge.online {
+      background: #ecfdf5;
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+    .sync-status-badge.offline {
+      background: #fffbeb;
+      color: #92400e;
+      border-color: #fde68a;
+    }
+
+    /* Container and grid */
+    .app-main {
+      max-width: 1320px;
+      margin: 1.5rem auto;
+      padding: 0 1rem 3rem 1rem;
+    }
+
+    /* Step guide card */
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .guide-step {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      padding: 1.1rem;
+      position: relative;
+      border-top: 3px solid var(--accent);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .guide-step:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+    }
+    .guide-num {
+      width: 26px;
+      height: 26px;
+      background: var(--accent);
+      color: #ffffff;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .guide-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 0.35rem;
+    }
+    .guide-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Sections */
+    .card-section {
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid #f1f5f9;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .section-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-main);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin: 0;
+    }
+    .section-desc {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: 0.25rem;
+    }
+
+    /* Test Monitor Hero Display */
+    .monitor-box {
+      background: linear-gradient(145deg, #ffffff, #f0fdfa);
+      border: 1px solid var(--accent-border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .monitor-status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.85rem;
+      border-bottom: 1px solid rgba(15, 118, 110, 0.15);
+    }
+    .active-athlete-badge {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--accent);
+      background: #ffffff;
+      padding: 0.4rem 1rem;
+      border-radius: 8px;
+      border: 1px solid var(--accent-border);
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .monitor-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .stat-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 1rem;
+      text-align: center;
+    }
+    .stat-card.highlight {
+      border-color: var(--accent);
+      background: #fcfdfd;
+    }
+    .stat-label {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      margin-bottom: 0.25rem;
+    }
+    .stat-val {
+      font-size: 2.1rem;
+      font-weight: 800;
+      color: var(--text-main);
+      font-feature-settings: "tnum";
+      font-variant-numeric: tabular-nums;
+    }
+    .stat-val.timer {
+      color: var(--accent);
+    }
+    .stat-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    /* Action buttons row */
+    .timer-controls {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    /* Forms */
+    .form-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+    }
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .form-group label {
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .form-input, .form-select, .form-textarea {
+      padding: 0.55rem 0.8rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      font-size: 0.9rem;
+      background: #ffffff;
+      color: var(--text-main);
+      transition: border-color 0.15s ease;
+      font-family: inherit;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.15);
+    }
+
+    /* Buttons */
+    .btn-act {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+      font-family: inherit;
+      text-decoration: none;
+      min-height: 44px;
+      box-sizing: border-box;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #ffffff;
+    }
+    .btn-primary:hover {
+      background: var(--accent-hover);
+    }
+    .btn-outline {
+      background: #ffffff;
+      color: var(--text-main);
+      border-color: var(--border-subtle);
+    }
+    .btn-outline:hover {
+      background: #f8fafc;
+      border-color: #cbd5e1;
+    }
+    .btn-outline-primary {
+      background: #ffffff;
+      color: var(--accent);
+      border-color: var(--accent-border);
+    }
+    .btn-outline-primary:hover {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+    .btn-danger {
+      background: #fef2f2;
+      color: var(--danger);
+      border-color: #fecaca;
+    }
+    .btn-danger:hover {
+      background: #fee2e2;
+    }
+    .btn-sm {
+      padding: 0.35rem 0.65rem;
+      font-size: 0.8rem;
+      min-height: 38px;
+    }
+    .btn-lg {
+      padding: 0.75rem 1.4rem;
+      font-size: 1rem;
+      min-height: 48px;
+    }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 0.5rem;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      max-width: 100%;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+      text-align: left;
+    }
+    .data-table th {
+      background: #f8fafc;
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 0.75rem 0.9rem;
+      border-bottom: 1px solid var(--border-subtle);
+      white-space: nowrap;
+    }
+    .data-table td {
+      padding: 0.7rem 0.9rem;
+      border-bottom: 1px solid #f1f5f9;
+      color: var(--text-main);
+    }
+    .data-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    .data-table tbody tr:hover {
+      background: #fcfcfc;
+    }
+
+    .badge-status {
+      display: inline-block;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-comp { background: #dcfce7; color: #166534; }
+    .badge-part { background: #fef9c3; color: #854d0e; }
+    .badge-pend { background: #f1f5f9; color: #475569; }
+
+    /* Modals */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      backdrop-filter: blur(2px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+    .modal-box {
+      background: #ffffff;
+      border-radius: 14px;
+      max-width: 650px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      padding: 1.75rem;
+      position: relative;
+    }
+    .modal-box.modal-lg {
+      max-width: 900px;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 1rem;
+      margin-bottom: 1.25rem;
+    }
+    .modal-title {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0;
+    }
+    .btn-close {
+      background: none;
+      border: none;
+      font-size: 1.25rem;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+    }
+    .btn-close:hover {
+      color: var(--text-main);
+      background: #f1f5f9;
+    }
+
+    /* Normative Table Styling */
+    .norm-table th, .norm-table td {
+      text-align: center;
+      font-size: 0.8rem;
+      padding: 0.5rem;
+    }
+    .norm-highlight {
+      background-color: #ccfbf1 !important;
+      font-weight: 700;
+      color: #0f766e !important;
+    }
+
+    /* Print styles */
+    @media print {
+      body {
+        background: #ffffff !important;
+        color: #000000 !important;
+      }
+      .app-header, .guide-grid, #section-monitor, #section-cadastro, #section-estagios-form,
+      #section-professores, #section-instrucoes, .timer-controls, .no-print, .btn-act {
+        display: none !important;
+      }
+      .modal-backdrop {
+        position: static;
+        background: transparent;
+        padding: 0;
+      }
+      .modal-box {
+        max-width: 100%;
+        max-height: none;
+        box-shadow: none;
+        border: none;
+        padding: 0;
+      }
+      .print-only {
+        display: block !important;
+      }
+    }
+
+    /* Accordion Details */
+    details.clinical-guide {
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      background: #ffffff;
+    }
+    details.clinical-guide summary {
+      padding: 0.85rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #f8fafc;
+      border-radius: 8px;
+      user-select: none;
+      outline: none;
+      list-style-position: inside;
+    }
+    details.clinical-guide[open] summary {
+      border-bottom: 1px solid var(--border-subtle);
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+    details.clinical-guide .content {
+      padding: 1rem;
+      font-size: 0.86rem;
+      line-height: 1.6;
+      color: #334155;
+    }
+
+    /* SVG chart containers */
+    .chart-svg-wrap {
+      width: 100%;
+      height: 240px;
+      background: #ffffff;
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 10px;
+      box-sizing: border-box;
+    }
+
+    /* =========================================================
+       OTIMIZAÇÕES RESPONSIVAS — TABLETS VERTICAIS & CELULARES
+       ========================================================= */
+    @media (max-width: 1024px) {
+      .app-main {
+        padding: 0 0.85rem 3rem 0.85rem;
+      }
+      .card-section {
+        padding: 1.15rem;
+      }
+      .monitor-box {
+        padding: 1.15rem;
+      }
+      .modal-box {
+        max-width: 95vw !important;
+        width: 95vw !important;
+        padding: 1.25rem !important;
+        max-height: 92vh !important;
+      }
+      .modal-box.modal-lg {
+        max-width: 95vw !important;
+        width: 95vw !important;
+      }
+      #form-config-protocolo {
+        grid-template-columns: repeat(2, 1fr) !important;
+      }
+      #form-config-protocolo > div:last-child {
+        grid-column: 1 / -1;
+      }
+      #form-config-protocolo .btn-primary {
+        width: 100%;
+      }
+      .monitor-stats {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .timer-controls {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        width: 100%;
+      }
+      .timer-controls .btn-danger {
+        grid-column: 1 / -1;
+      }
+      .timer-controls .btn-act {
+        width: 100%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .app-header {
+        padding: 0.85rem 1rem;
+      }
+      .header-inner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      .header-actions {
+        flex-direction: column;
+        align-items: stretch;
+        width: 100%;
+        gap: 0.6rem;
+      }
+      .header-actions > .form-group {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.3rem !important;
+      }
+      .header-actions > div[style*="align-items: flex-end"] {
+        align-items: flex-start !important;
+      }
+      #sync-subtext {
+        text-align: left !important;
+        max-width: 100% !important;
+      }
+      .header-actions .btn-act {
+        width: 100%;
+      }
+
+      .guide-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .monitor-status-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      .active-athlete-badge {
+        font-size: 0.95rem;
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .monitor-stats {
+        grid-template-columns: 1fr;
+      }
+      .stat-val {
+        font-size: 1.85rem;
+      }
+
+      .timer-controls {
+        grid-template-columns: 1fr;
+      }
+      .timer-controls .btn-act {
+        width: 100%;
+      }
+
+      #form-config-protocolo {
+        grid-template-columns: 1fr !important;
+      }
+
+      .form-grid-3 {
+        grid-template-columns: 1fr !important;
+      }
+
+      #form-aluno > div[style*="grid-template-columns"],
+      #form-professor > div[style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+      }
+
+      .section-head {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.75rem;
+      }
+      .section-head .btn-act {
+        width: 100%;
+      }
+
+      .data-table {
+        font-size: 0.78rem;
+      }
+      .data-table th, .data-table td {
+        padding: 0.55rem 0.65rem;
+      }
+
+      #envio-previa-container > div:last-child {
+        flex-direction: column;
+        width: 100%;
+      }
+      #envio-previa-container > div:last-child .btn-act {
+        width: 100%;
+      }
+
+      #section-desfecho .stat-card {
+        padding: 0.85rem;
+      }
+
+      div[style*="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr))"] {
+        grid-template-columns: 1fr !important;
+      }
+      div[style*="grid-template-columns: repeat(auto-fit, minmax(340px, 1fr))"] {
+        grid-template-columns: 1fr !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- CABEÇALHO -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div>
+        <div class="brand-title">
+          <span>INSTITUTO MOOVE</span>
+          <span class="brand-badge">VO₂ Máximo</span>
+        </div>
+        <div class="brand-sub">Avaliação Fisiológica & Teste de Esteira Progressiva</div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Avaliador Selecionado -->
+        <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.4rem;">
+          <label for="select-avaliador" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Avaliador:</label>
+          <select id="select-avaliador" class="form-select" style="padding: 0.35rem 0.6rem; font-size: 0.85rem; font-weight: 600;">
+            <!-- Preenchido via JS -->
+          </select>
+        </div>
+
+        <!-- Status de Conexão -->
+        <div style="display: flex; flex-direction: column; align-items: flex-end;">
+          <span id="sync-status" class="sync-status-badge offline" title="Os dados estão salvos neste aparelho. Configure a sincronização para usar em outros dispositivos.">
+            <span id="sync-dot">🟠</span> <span id="sync-text">Offline — dados locais</span>
+          </span>
+          <span id="sync-subtext" style="font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; text-align: right; max-width: 220px; line-height: 1.2;">
+            Os dados estão salvos neste aparelho. Configure a sincronização para usar em outros dispositivos.
+          </span>
+        </div>
+
+        <!-- Botão Sincronização -->
+        <button type="button" class="btn-act btn-outline btn-sm" id="btn-open-sync">
+          ⚙️ Sincronização
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="app-main">
+
+    <!-- 2. GUIA RÁPIDO -->
+    <section class="guide-grid" aria-label="Guia Rápido do Protocolo">
+      <div class="guide-step">
+        <div class="guide-num">1</div>
+        <div class="guide-title">Cadastro & Seleção</div>
+        <div class="guide-desc">Selecione ou cadastre o avaliado na lista abaixo antes de iniciar qualquer procedimento na esteira.</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">2</div>
+        <div class="guide-title">Aquecimento</div>
+        <div class="guide-desc">3 minutos de caminhada rápida ou trote leve a 5,0–6,0 km/h com inclinação zero (0%).</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">3</div>
+        <div class="guide-title">Execução do Teste</div>
+        <div class="guide-desc">Início a 8,0 km/h com acréscimo de +0,5 km/h a cada 2 minutos (120s). Registre FC e Borg no final do estágio.</div>
+      </div>
+      <div class="guide-step">
+        <div class="guide-num">4</div>
+        <div class="guide-title">Recuperação</div>
+        <div class="guide-desc">Caminhada ativa a 4,5 km/h por 2 min com registro obrigatório da FC aos 60s e aos 120s.</div>
+      </div>
+    </section>
+
+    <!-- 3. CADASTRO DE ALUNO/ATLETA -->
+    <section class="card-section" id="section-cadastro">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">👤 Gestão de Alunos / Atletas</h2>
+          <div class="section-desc">Selecione um atleta para iniciar o teste fisiológico ou cadastre novos avaliados.</div>
+        </div>
+        <button type="button" class="btn-act btn-primary" id="btn-novo-aluno">
+          + Cadastrar Novo Aluno
+        </button>
+      </div>
+
+      <!-- Barra de pesquisa -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; max-width: 480px;">
+        <input type="text" id="input-busca-aluno" class="form-input" style="flex: 1;" placeholder="Buscar aluno por nome...">
+        <button type="button" id="btn-limpar-busca" class="btn-act btn-outline btn-sm">Limpar busca</button>
+      </div>
+
+      <!-- Tabela de Alunos -->
+      <div class="table-responsive">
+        <table class="data-table" id="tabela-alunos">
+          <thead>
+            <tr>
+              <th>Nome Completo</th>
+              <th>Telefone / WhatsApp</th>
+              <th>E-mail</th>
+              <th>Idade</th>
+              <th>Sexo</th>
+              <th>Peso (kg)</th>
+              <th>Altura (m)</th>
+              <th style="text-align: right;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-alunos">
+            <!-- Renderizado via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. MONITOR DO TESTE & 5. REGISTRO DE DADOS -->
+    <section class="card-section" id="section-monitor">
+      <div class="monitor-box">
+        <div class="monitor-status-bar">
+          <div>
+            <span class="active-athlete-badge">
+              🏃 Testando: <span id="display-atleta-nome" style="color: var(--text-main);">Nenhum atleta selecionado</span>
+            </span>
+            <span id="display-atleta-detalhes" style="font-size: 0.85rem; color: var(--text-muted); margin-left: 0.75rem;"></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+            <label style="display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; cursor: pointer; user-select: none;">
+              <input type="checkbox" id="chk-som" checked>
+              <span>🔊 Som Ativo</span>
+            </label>
+            <span class="badge-status badge-pend" id="badge-protocolo-info">Protocolo: +0,5 km/h / 120s</span>
+          </div>
+        </div>
+
+        <!-- CONFIGURAÇÃO DO PROTOCOLO -->
+        <div class="protocol-config-panel" style="background: #ffffff; border: 1px solid var(--accent-border); border-radius: 10px; padding: 0.9rem 1.15rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(15, 118, 110, 0.05);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <div style="font-size: 0.88rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 0.4rem;">
+              <span>⚙️ Configuração do Protocolo</span>
+              <span style="font-size: 0.75rem; font-weight: 500; color: var(--text-muted);">(Parâmetros Editáveis da Rampa)</span>
+            </div>
+            <span style="font-size: 0.76rem; color: var(--text-muted);">Ajustes salvos automaticamente</span>
+          </div>
+          <form id="form-config-protocolo" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) auto; gap: 0.75rem; align-items: flex-end;">
+            <div class="form-group">
+              <label for="cfg-velocidade-inicial" style="font-size: 0.78rem; font-weight: 600;">Velocidade Inicial (km/h)</label>
+              <input type="number" id="cfg-velocidade-inicial" class="form-input" min="4.0" max="16.0" step="0.1" value="8.0" required style="padding: 0.45rem 0.65rem; font-size: 0.88rem;">
+            </div>
+            <div class="form-group">
+              <label for="cfg-total-estagios" style="font-size: 0.78rem; font-weight: 600;">Quantidade de Estágios</label>
+              <input type="number" id="cfg-total-estagios" class="form-input" min="1" max="30" value="12" required style="padding: 0.45rem 0.65rem; font-size: 0.88rem;">
+            </div>
+            <div class="form-group">
+              <label for="cfg-tempo-estagio" style="font-size: 0.78rem; font-weight: 600;">Tempo por Estágio (segundos)</label>
+              <input type="number" id="cfg-tempo-estagio" class="form-input" min="30" max="600" value="120" required style="padding: 0.45rem 0.65rem; font-size: 0.88rem;">
+            </div>
+            <div class="form-group">
+              <label for="cfg-incremento-vel" style="font-size: 0.78rem; font-weight: 600;">Incremento de Velocidade (km/h)</label>
+              <input type="number" id="cfg-incremento-vel" class="form-input" min="0.1" max="2.0" step="0.1" value="0.5" required style="padding: 0.45rem 0.65rem; font-size: 0.88rem;">
+            </div>
+            <div style="display: flex; gap: 0.5rem; align-items: flex-end;">
+              <button type="submit" class="btn-act btn-primary" id="btn-aplicar-config" style="padding: 0.48rem 1rem; font-size: 0.84rem; white-space: nowrap;">
+                ✓ Aplicar Configuração
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <div class="monitor-stats">
+          <div class="stat-card">
+            <div class="stat-label">Estágio Atual</div>
+            <div class="stat-val" id="monitor-estagio">1 / 12</div>
+            <div class="stat-sub" id="monitor-fase-texto">Protocolo Progressivo</div>
+          </div>
+          <div class="stat-card highlight">
+            <div class="stat-label">Velocidade da Esteira</div>
+            <div class="stat-val" id="monitor-velocidade">8.0 <span style="font-size: 1rem; font-weight: 500;">km/h</span></div>
+            <div class="stat-sub">Inclinação: 0.0% fixa</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Tempo no Estágio</div>
+            <div class="stat-val timer" id="monitor-tempo">02:00</div>
+            <div class="stat-sub">Regressivo por estágio</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Tempo Total Efetivo</div>
+            <div class="stat-val" id="monitor-tempo-total" style="color: #475569;">00:00</div>
+            <div class="stat-sub">Duração acumulada</div>
+          </div>
+        </div>
+
+        <div class="timer-controls">
+          <button type="button" class="btn-act btn-primary btn-lg" id="btn-timer-toggle">
+            ▶ Iniciar Cronômetro
+          </button>
+          <button type="button" class="btn-act btn-outline-primary btn-lg" id="btn-proximo-estagio">
+            ⏭ Próximo Estágio
+          </button>
+          <button type="button" class="btn-act btn-danger btn-lg" id="btn-encerrar-teste">
+            ⏹ Encerrar Teste
+          </button>
+        </div>
+      </div>
+
+      <!-- 5. REGISTRO DE DADOS DO ESTÁGIO -->
+      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1.25rem;">
+        <h3 style="font-size: 1rem; font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: var(--accent);">
+          📝 Registro do Estágio Atual (<span id="registro-estagio-label">Estágio 1 - 8.0 km/h</span>)
+        </h3>
+        <form id="form-estagio-dados" class="form-grid-3">
+          <div class="form-group">
+            <label for="input-fc-estagio">Frequência Cardíaca (bpm) *</label>
+            <input type="number" id="input-fc-estagio" class="form-input" placeholder="Ex: 142" min="30" max="250" required>
+          </div>
+          <div class="form-group">
+            <label for="select-pse-borg">PSE Borg (0 a 10) *</label>
+            <select id="select-pse-borg" class="form-select" required>
+              <option value="0">0 - Repouso absoluto</option>
+              <option value="1">1 - Muito muito leve</option>
+              <option value="2">2 - Muito leve</option>
+              <option value="3">3 - Leve (confortável)</option>
+              <option value="4">4 - Moderado</option>
+              <option value="5">5 - Um pouco difícil</option>
+              <option value="6">6 - Difícil</option>
+              <option value="7">7 - Muito difícil</option>
+              <option value="8">8 - Muito muito difícil</option>
+              <option value="9">9 - Quase exaustão</option>
+              <option value="10">10 - Esforço Máximo</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="select-talk-test">Talk Test (Teste da Fala) *</label>
+            <select id="select-talk-test" class="form-select" required>
+              <option value="Fala normal (confortável)">Fala normal (confortável)</option>
+              <option value="Fala entrecortada / difícil">Fala entrecortada / difícil</option>
+              <option value="Incapaz de falar continuamente">Incapaz de falar continuamente</option>
+            </select>
+          </div>
+          <div class="form-group" style="grid-column: 1 / -1;">
+            <label for="input-obs-estagio">Observações Fisiológicas / Sintomas do Estágio</label>
+            <input type="text" id="input-obs-estagio" class="form-input" placeholder="Ex: Respiração rítmica, boa biomecânica, sem sinais de dor articular.">
+          </div>
+          <div style="grid-column: 1 / -1; display: flex; justify-content: flex-end;">
+            <button type="submit" class="btn-act btn-primary">
+              ✓ Salvar Dados do Estágio
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- 6. QUADRO DE ESTÁGIOS E RESPOSTAS FISIOLÓGICAS -->
+    <section class="card-section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📊 Quadro de Estágios & Respostas Fisiológicas</h2>
+          <div class="section-desc">Evolução do protocolo, cálculo de METs e dados cardiorrespiratórios aferidos.</div>
+        </div>
+        <button type="button" class="btn-act btn-outline btn-sm" id="btn-reset-estagios">Reiniciar Estágios do Teste</button>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table" id="tabela-estagios">
+          <thead>
+            <tr>
+              <th>Estágio</th>
+              <th>Velocidade</th>
+              <th>METs Est.</th>
+              <th>FC (bpm)</th>
+              <th>PSE (Borg)</th>
+              <th>Talk Test</th>
+              <th>Observações</th>
+              <th>Status</th>
+              <th style="text-align: right;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-estagios">
+            <!-- Renderizado via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 7. DESFECHO DO TESTE & RECUPERAÇÃO -->
+    <section class="card-section" id="section-desfecho">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">🎯 Desfecho do Teste, VO₂ Máximo & Recuperação</h2>
+          <div class="section-desc">Cálculos metabólicos ACSM, cinética de recuperação da FC e classificação de aptidão.</div>
+        </div>
+      </div>
+
+      <div class="monitor-stats" style="margin-bottom: 1.5rem;">
+        <div class="stat-card">
+          <div class="stat-label">Velocidade Final Atingida</div>
+          <div class="stat-val" id="res-vel-final">0.0 <span style="font-size: 1rem;">km/h</span></div>
+          <div class="stat-sub">Último estágio atingido</div>
+        </div>
+        <div class="stat-card highlight">
+          <div class="stat-label">VO₂ Máximo Estimado</div>
+          <div class="stat-val" style="color: var(--accent);" id="res-vo2-max">0.0 <span style="font-size: 0.9rem;">mL/kg/min</span></div>
+          <div class="stat-sub">Fórmula ACSM Esteira</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">METs Máximo</div>
+          <div class="stat-val" id="res-mets-max">0.0 <span style="font-size: 1rem;">METs</span></div>
+          <div class="stat-sub">VO₂ / 3,5 mL/kg/min</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Classificação Cooper/ACSM</div>
+          <div class="stat-val" id="res-classificacao" style="font-size: 1.35rem; color: #047857; margin-top: 0.4rem;">—</div>
+          <div class="stat-sub">Por idade e sexo</div>
+        </div>
+      </div>
+
+      <!-- Protocolo de Recuperação -->
+      <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
+          <h3 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--text-main);">
+            ⏱ Cronômetro de Recuperação Cardíaca (2 minutos ativos a 4,5 km/h)
+          </h3>
+          <div style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn-act btn-outline-primary btn-sm" id="btn-rec-start">
+              ▶ Iniciar Recuperação (2 min)
+            </button>
+            <button type="button" class="btn-act btn-outline btn-sm" id="btn-rec-reset">
+              Refazer medição
+            </button>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 1rem;">
+          <div style="font-size: 2.2rem; font-weight: 800; color: var(--accent); font-family: monospace;" id="timer-rec-display">
+            02:00
+          </div>
+          <div style="font-size: 0.85rem; color: var(--text-muted); max-width: 450px;">
+            Aferir FC imediatamente no final do teste (Pico), exatamente aos 60 segundos e aos 120 segundos de caminhada leve.
+          </div>
+        </div>
+
+        <div class="form-grid-3">
+          <div class="form-group">
+            <label for="input-fc-pico">FC Pico / Término (bpm)</label>
+            <input type="number" id="input-fc-pico" class="form-input" placeholder="Ex: 184" min="30" max="250">
+          </div>
+          <div class="form-group">
+            <label for="input-fc-60s">FC aos 60 segundos (bpm)</label>
+            <input type="number" id="input-fc-60s" class="form-input" placeholder="Ex: 160" min="30" max="250">
+          </div>
+          <div class="form-group">
+            <label for="input-fc-120s">FC aos 120 segundos (bpm)</label>
+            <input type="number" id="input-fc-120s" class="form-input" placeholder="Ex: 144" min="30" max="250">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px dashed var(--border-subtle);">
+          <div>
+            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Queda em 1 min (60s):</span>
+            <div id="display-queda-1min" style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Queda em 2 min (120s):</span>
+            <div id="display-queda-2min" style="font-size: 1.15rem; font-weight: 700; color: var(--text-main);">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Critério Autonômico:</span>
+            <div style="font-size: 0.8rem; color: var(--text-muted);">≥12 bpm (Boa), 6–11 bpm (Moderada), &lt;6 bpm (Abaixo)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <label for="input-obs-finais">Observações Finais & Parecer do Avaliador Responsável</label>
+        <textarea id="input-obs-finais" class="form-textarea" rows="3" placeholder="Ex: Avaliado demonstrou excelente tolerância cardiorrespiratória ao esforço, estabilização hemodinâmica adequada e recuperação rápida."></textarea>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 1rem; flex-wrap: wrap;">
+        <button type="button" class="btn-act btn-primary btn-lg" id="btn-salvar-avaliacao">
+          💾 Salvar Resultado da Avaliação
+        </button>
+      </div>
+    </section>
+
+    <!-- 8. HISTÓRICO DE AVALIAÇÕES -->
+    <section class="card-section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📂 Histórico de Avaliações Registradas</h2>
+          <div class="section-desc">Consulte testes anteriores realizados no Instituto Moove e gere laudos individuais.</div>
+        </div>
+        <button type="button" class="btn-act btn-outline-primary" id="btn-relatorio-evolucao">
+          📄 Gerar Relatório de Evolução
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table" id="tabela-historico">
+          <thead>
+            <tr>
+              <th>Cliente / Atleta</th>
+              <th>Data</th>
+              <th>Vel. Final</th>
+              <th>VO₂ Máx</th>
+              <th>METs</th>
+              <th>Queda 1 min</th>
+              <th>Queda 2 min</th>
+              <th>Avaliador</th>
+              <th>Observações</th>
+              <th style="text-align: right;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-historico">
+            <!-- Renderizado via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- NOVA SEÇÃO: ENVIAR RESULTADOS AO ALUNO -->
+    <section class="card-section" id="section-envio-resultados">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📤 Enviar Resultados ao Aluno</h2>
+          <div class="section-desc">Compartilhe o laudo do teste de VO₂ Máximo diretamente com o aluno via WhatsApp, E-mail ou PDF profissional.</div>
+        </div>
+        <span class="badge-status badge-comp" id="badge-envio-status">Pronto para envio</span>
+      </div>
+
+      <!-- SELEÇÃO DO ALUNO E AVALIAÇÃO -->
+      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
+          <div class="form-group">
+            <label for="envio-select-aluno">1. Selecionar Aluno / Atleta</label>
+            <select id="envio-select-aluno" class="form-select" style="font-weight: 600;">
+              <!-- Preenchido via JS -->
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="envio-select-avaliacao">2. Selecionar Avaliação a Enviar</label>
+            <select id="envio-select-avaliacao" class="form-select" style="font-weight: 600;">
+              <!-- Preenchido via JS -->
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- PRÉVIA DO RESULTADO -->
+      <div id="envio-previa-container">
+        <div style="font-size: 0.88rem; font-weight: 700; color: var(--accent); margin-bottom: 0.85rem; display: flex; align-items: center; gap: 0.4rem;">
+          <span>📋 Prévia do Resultado Selecionado</span>
+        </div>
+
+        <div class="monitor-stats" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-bottom: 1.25rem;">
+          <div class="stat-card">
+            <div class="stat-label">Aluno</div>
+            <div class="stat-val" id="prev-aluno-nome" style="font-size: 1.05rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">—</div>
+            <div class="stat-sub" id="prev-aluno-contato">Sem contato</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Data do Teste</div>
+            <div class="stat-val" id="prev-data-teste" style="font-size: 1.2rem;">—</div>
+            <div class="stat-sub">Realização</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Velocidade Final</div>
+            <div class="stat-val" id="prev-vel-final" style="font-size: 1.35rem;">0.0 <span style="font-size: 0.8rem;">km/h</span></div>
+            <div class="stat-sub">Pico na esteira</div>
+          </div>
+          <div class="stat-card highlight">
+            <div class="stat-label">VO₂ Máximo</div>
+            <div class="stat-val" id="prev-vo2-max" style="font-size: 1.45rem; color: var(--accent);">0.0 <span style="font-size: 0.8rem;">mL/kg/min</span></div>
+            <div class="stat-sub">Capacidade aeróbia</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">METs Máximo</div>
+            <div class="stat-val" id="prev-mets-max" style="font-size: 1.35rem;">0.0</div>
+            <div class="stat-sub">Múltiplo metabólico</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Classificação</div>
+            <div class="stat-val" id="prev-classificacao" style="font-size: 1.15rem; color: #047857;">—</div>
+            <div class="stat-sub">Cooper / ACSM</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Queda FC 1 min</div>
+            <div class="stat-val" id="prev-queda-1min" style="font-size: 1.2rem;">—</div>
+            <div class="stat-sub">Recuperação 60s</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Queda FC 2 min</div>
+            <div class="stat-val" id="prev-queda-2min" style="font-size: 1.2rem;">—</div>
+            <div class="stat-sub">Recuperação 120s</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Avaliador</div>
+            <div class="stat-val" id="prev-avaliador" style="font-size: 0.95rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">—</div>
+            <div class="stat-sub">Responsável</div>
+          </div>
+        </div>
+
+        <!-- BOTÕES DE DISPARO -->
+        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; justify-content: flex-end; align-items: center; border-top: 1px solid var(--border-subtle); padding-top: 1.25rem;">
+          <button type="button" class="btn-act btn-primary" id="btn-gerar-pdf-envio" style="background: var(--accent);">
+            📄 Gerar PDF do Resultado
+          </button>
+          <button type="button" class="btn-act" id="btn-enviar-whatsapp" style="background: #25d366; color: #ffffff; border: none;">
+            📱 Enviar via WhatsApp
+          </button>
+          <button type="button" class="btn-act btn-outline-primary" id="btn-enviar-email">
+            ✉️ Enviar via E-mail
+          </button>
+          <button type="button" class="btn-act btn-outline" id="btn-baixar-pdf-envio">
+            📎 Baixar PDF
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. COMPARATIVO DA FC POR ESTÁGIOS (Gráfico Dinâmico SVG) -->
+    <section class="card-section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📈 Curva de Frequência Cardíaca por Estágio</h2>
+          <div class="section-desc">Progressão da resposta cronotrópica ao aumento contínuo de intensidade do teste atual.</div>
+        </div>
+      </div>
+      <div class="chart-svg-wrap" id="chart-fc-wrapper">
+        <svg id="svg-fc-chart" width="100%" height="100%" viewBox="0 0 800 220" preserveAspectRatio="none" style="overflow: visible;"></svg>
+      </div>
+    </section>
+
+    <!-- 10. GESTÃO DE PROFESSORES & AVALIADORES -->
+    <section class="card-section" id="section-professores">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">👨‍🏫 Gestão de Professores & Avaliadores</h2>
+          <div class="section-desc">Cadastre e gerencie a equipe responsável pela aplicação e validação dos testes.</div>
+        </div>
+        <button type="button" class="btn-act btn-primary" id="btn-novo-professor">
+          + Adicionar Professor
+        </button>
+      </div>
+
+      <div class="table-responsive">
+        <table class="data-table" id="tabela-professores">
+          <thead>
+            <tr>
+              <th>Ativo</th>
+              <th>Nome Completo</th>
+              <th>CREF</th>
+              <th>Telefone</th>
+              <th>E-mail</th>
+              <th style="text-align: right;">Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody-professores">
+            <!-- Preenchido via JS -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 11. TABELAS NORMATIVAS (Cooper / ACSM) -->
+    <section class="card-section">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📋 Tabelas Normativas de VO₂ Máximo (The Cooper Institute / ACSM)</h2>
+          <div class="section-desc">Padrões de referência de aptidão cardiorrespiratória expressos em mL/kg/min por faixa etária.</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.5rem;">
+        <!-- Tabela Homens -->
+        <div>
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem;">
+            Masculino (mL/kg/min)
+          </h3>
+          <div class="table-responsive">
+            <table class="data-table norm-table" id="norm-table-m">
+              <thead>
+                <tr>
+                  <th>Idade</th>
+                  <th>M. Fraco</th>
+                  <th>Fraco</th>
+                  <th>Regular</th>
+                  <th>Bom</th>
+                  <th>Excelente</th>
+                  <th>Superior</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-age="20-29"><td>20-29</td><td>&lt;33.0</td><td>33.0-36.4</td><td>36.5-42.4</td><td>42.5-46.4</td><td>46.5-52.4</td><td>≥52.5</td></tr>
+                <tr data-age="30-39"><td>30-39</td><td>&lt;31.5</td><td>31.5-35.4</td><td>35.5-40.9</td><td>41.0-44.9</td><td>45.0-49.4</td><td>≥49.5</td></tr>
+                <tr data-age="40-49"><td>40-49</td><td>&lt;30.2</td><td>30.2-33.5</td><td>33.6-38.9</td><td>39.0-43.7</td><td>43.8-48.0</td><td>≥48.1</td></tr>
+                <tr data-age="50-59"><td>50-59</td><td>&lt;26.1</td><td>26.1-30.9</td><td>31.0-35.7</td><td>35.8-40.9</td><td>41.0-45.3</td><td>≥45.4</td></tr>
+                <tr data-age="60+"><td>60+</td><td>&lt;20.5</td><td>20.5-26.0</td><td>26.1-32.2</td><td>32.3-36.4</td><td>36.5-44.2</td><td>≥44.3</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Tabela Mulheres -->
+        <div>
+          <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--accent); margin-bottom: 0.5rem;">
+            Feminino (mL/kg/min)
+          </h3>
+          <div class="table-responsive">
+            <table class="data-table norm-table" id="norm-table-f">
+              <thead>
+                <tr>
+                  <th>Idade</th>
+                  <th>M. Fraco</th>
+                  <th>Fraco</th>
+                  <th>Regular</th>
+                  <th>Bom</th>
+                  <th>Excelente</th>
+                  <th>Superior</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-age="20-29"><td>20-29</td><td>&lt;23.6</td><td>23.6-28.9</td><td>29.0-32.9</td><td>33.0-36.9</td><td>37.0-41.0</td><td>≥41.1</td></tr>
+                <tr data-age="30-39"><td>30-39</td><td>&lt;22.8</td><td>22.8-26.9</td><td>27.0-31.4</td><td>31.5-35.6</td><td>35.7-40.0</td><td>≥40.1</td></tr>
+                <tr data-age="40-49"><td>40-49</td><td>&lt;21.0</td><td>21.0-24.4</td><td>24.5-28.9</td><td>29.0-32.8</td><td>32.9-36.9</td><td>≥37.0</td></tr>
+                <tr data-age="50-59"><td>50-59</td><td>&lt;20.2</td><td>20.2-22.7</td><td>22.8-26.9</td><td>27.0-31.4</td><td>31.5-35.7</td><td>≥35.8</td></tr>
+                <tr data-age="60+"><td>60+</td><td>&lt;17.5</td><td>17.5-20.1</td><td>20.2-24.4</td><td>24.5-30.2</td><td>30.3-31.4</td><td>≥31.5</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 12. INSTRUÇÕES CLÍNICAS -->
+    <section class="card-section" id="section-instrucoes">
+      <div class="section-head">
+        <div>
+          <h2 class="section-title">📖 Diretrizes Clínicas & Segurança Operacional</h2>
+          <div class="section-desc">Instruções para condução segura do protocolo de esforço progressivo em esteira rolante.</div>
+        </div>
+      </div>
+
+      <details class="clinical-guide" open>
+        <summary>Aquecimento Padronizado (Warm-up)</summary>
+        <div class="content">
+          Duração obrigatória de 3 minutos com velocidade constante entre 5,0 e 6,0 km/h (caminhada rápida ou trote leve) e inclinação zero (0%). Este período permite adaptação neuromuscular à esteira, elevação gradual do débito cardíaco e redistribuição do fluxo sanguíneo sem indução de fadiga prematura.
+        </div>
+      </details>
+
+      <details class="clinical-guide">
+        <summary>Progressão do Protocolo de Esteira (Rampa Escalonada)</summary>
+        <div class="content">
+          O teste inicia exatamente a 8,0 km/h com inclinação mantida em 0%. A cada estágio de 2 minutos (120 segundos), adiciona-se precisamente +0,5 km/h à esteira. Durante os últimos 15 a 20 segundos de cada estágio, o avaliador deve questionar a Percepção Subjetiva de Esforço (PSE Borg 0–10), registrar a FC pico do estágio e avaliar o Talk Test (capacidade de falar continuamente).
+        </div>
+      </details>
+
+      <details class="clinical-guide">
+        <summary>Critérios de Interrupção Imediata do Teste (ACSM Guidelines)</summary>
+        <div class="content">
+          O teste deve ser interrompido imediatamente na ocorrência de qualquer um dos seguintes fatores:<br>
+          1. <strong>Solicitação voluntária</strong> do avaliado por exaustão ou desconforto intolerável;<br>
+          2. <strong>Sintomas neurológicos/vasculares:</strong> tontura, vertigem, palidez cutânea acentuada, descoordenação motora ou perda de equilíbrio;<br>
+          3. <strong>Sintomas cardiovasculares:</strong> dor precordial, sensação de opressão torácica, dispneia desproporcional ao esforço;<br>
+          4. <strong>Frequência cardíaca:</strong> elevação acima de 100% da FC máxima prevista para a idade acompanhada de fadiga extrema ou ausência de incremento cronotrópico com aumento de carga (platô anormal).
+        </div>
+      </details>
+
+      <details class="clinical-guide">
+        <summary>Volta à Calma & Conduta Pós-Esforço (Cool-down)</summary>
+        <div class="content">
+          <strong>NUNCA pare a esteira abruptamente</strong> após o término do esforço máximo, sob risco iminente de hipotensão pós-exercício, estase venosa nos membros inferiores e síncope vasovagal. Reduza a esteira imediatamente para 4,5 km/h a 0% de inclinação e mantenha o avaliado caminhando por pelo menos 2 minutos, monitorando os valores de FC aos 60s e aos 120s para o cálculo da recuperação autonômica.
+        </div>
+      </details>
+    </section>
+
+  </main>
+
+  <!-- MODAL: SINCRONIZAÇÃO GOOGLE SHEETS / NUVEM -->
+  <div class="modal-backdrop" id="modal-sync" style="display: none;">
+    <div class="modal-box modal-lg" style="max-height: 85vh;">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ Sincronização em Nuvem (Google Apps Script)</h3>
+        <button type="button" class="btn-close" id="btn-close-sync">✕</button>
+      </div>
+
+      <div style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 0.85rem 1rem; border-radius: 8px; font-size: 0.85rem; line-height: 1.45; margin-bottom: 1.25rem; font-weight: 500;">
+        ⚠️ Configure esta mesma URL em CADA aparelho (celular, tablet, computador) uma única vez. A partir daí, todos os dados sincronizam automaticamente entre eles.
+      </div>
+
+      <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5; margin-top: 0;">
+        Sincronize automaticamente alunos, professores, histórico de avaliações e configurações em tempo real entre celulares, tablets e computadores.
+      </p>
+
+      <!-- Status atual dentro do modal -->
+      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.6rem;">
+          <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">Status da Nuvem:</span>
+          <span id="modal-sync-status-badge" class="sync-status-badge offline">
+            <span id="modal-sync-dot">🟠</span> <span id="modal-sync-text">Offline — dados locais</span>
+          </span>
+        </div>
+        <div id="modal-last-sync-time" style="font-size: 0.78rem; color: var(--text-muted);">
+          Última sincronização: Nunca
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 0.75rem;">
+        <label for="input-sync-url">URL do Google Apps Script (Web App)</label>
+        <input type="url" id="input-sync-url" class="form-input" placeholder="https://script.google.com/macros/s/.../exec">
+      </div>
+
+      <!-- Feedback de teste -->
+      <div id="sync-test-feedback" style="display: none; font-size: 0.82rem; padding: 0.6rem 0.85rem; border-radius: 6px; margin-bottom: 1rem;"></div>
+
+      <div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem;">
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="button" class="btn-act btn-outline btn-sm" id="btn-testar-sync">🔍 Testar Conexão</button>
+          <button type="button" class="btn-act btn-outline-primary btn-sm" id="btn-sync-agora">🔄 Sincronizar Agora</button>
+        </div>
+        <button type="button" class="btn-act btn-primary" id="btn-salvar-sync">💾 Salvar e Sincronizar</button>
+      </div>
+
+      <div style="background: #f0fdfa; border: 1px solid var(--accent-border); border-radius: 8px; padding: 0.85rem; font-size: 0.82rem; color: #115e59; line-height: 1.45; margin-bottom: 1.25rem;">
+        🔒 <strong>Armazenamento Seguro e Disponível Offline:</strong> Sem a URL, todos os dados continuam salvos de forma segura apenas neste navegador. Caso fique sem internet, o uso da página continua normal e as alterações serão enviadas assim que a conexão retornar.
+      </div>
+
+      <!-- Cópia de Segurança / Backup -->
+      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">💾 Cópia de Segurança Local (Backup)</div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">Exporte ou importe arquivos de backup em formato JSON.</div>
+        </div>
+        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+          <button type="button" class="btn-act btn-outline btn-sm" id="btn-exportar-backup">📤 Exportar Backup (.json)</button>
+          <button type="button" class="btn-act btn-outline btn-sm" id="btn-importar-backup">📥 Importar Backup (.json)</button>
+          <input type="file" id="input-import-backup" accept=".json" style="display: none;">
+        </div>
+      </div>
+
+      <!-- Instruções Passo a Passo Colapsáveis -->
+      <details class="clinical-guide" style="border-radius: 8px; font-size: 0.85rem;">
+        <summary style="font-size: 0.85rem; padding: 0.75rem 1rem; color: var(--accent); font-weight: 700;">
+          📘 Como configurar o Google Apps Script (passo a passo)
+        </summary>
+        <div class="content" style="padding: 1rem; line-height: 1.6; color: #334155;">
+          <ol style="margin: 0 0 1rem 1.25rem; padding: 0;">
+            <li style="margin-bottom: 0.4rem;">Crie uma planilha no Google Sheets (ex.: <em>"Instituto Moove — Dados"</em>).</li>
+            <li style="margin-bottom: 0.4rem;">No menu superior da planilha, clique em <strong>Extensões → Apps Script</strong>.</li>
+            <li style="margin-bottom: 0.4rem;">Substitua todo o código do arquivo <code>Código.gs</code> pelo script fornecido abaixo.</li>
+            <li style="margin-bottom: 0.4rem;">No canto superior direito, clique em <strong>Implantar → Nova implantação</strong>. Selecione o tipo de engrenagem <strong>Aplicativo da Web</strong>.</li>
+            <li style="margin-bottom: 0.4rem;">Defina <strong>Executar como:</strong> <em>"Eu"</em> e <strong>Quem tem acesso:</strong> <em>"Qualquer pessoa"</em> (Anyone).</li>
+            <li style="margin-bottom: 0.4rem;">Clique em <strong>Implantar</strong>, autorize as permissões da sua conta Google, copie a <strong>URL do aplicativo da web</strong> (termina em <code>/exec</code>) e cole no campo acima.</li>
+          </ol>
+
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <span style="font-weight: 700; font-size: 0.8rem; color: var(--text-main);">Código Google Apps Script pronto para copiar:</span>
+            <button type="button" class="btn-act btn-outline btn-sm" id="btn-copiar-script" style="font-size: 0.75rem; padding: 0.25rem 0.6rem;">📋 Copiar Código</button>
+          </div>
+          <pre id="code-apps-script" style="background: #1e293b; color: #e2e8f0; padding: 0.85rem; border-radius: 6px; font-size: 0.78rem; overflow-x: auto; max-height: 220px; font-family: monospace; line-height: 1.4;">function doGet(e) {
+  var prop = PropertiesService.getScriptProperties();
+  var raw = prop.getProperty("MOOVE_DATA");
+  var payload = raw ? JSON.parse(raw) : {
+    alunos: [],
+    professores: [],
+    avaliacoes: [],
+    config: {},
+    excluidos: { alunos: [], professores: [], avaliacoes: [] }
+  };
+  return ContentService.createTextOutput(JSON.stringify(payload))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function doPost(e) {
+  try {
+    var body = e.postData.contents;
+    var parsed = JSON.parse(body);
+    PropertiesService.getScriptProperties().setProperty("MOOVE_DATA", JSON.stringify(parsed));
+    return ContentService.createTextOutput(JSON.stringify({ status: "ok", timestamp: new Date().toISOString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", error: err.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}</pre>
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- MODAL: CADASTRO / EDIÇÃO DE ALUNO -->
+  <div class="modal-backdrop" id="modal-aluno" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-aluno-title">Cadastrar Novo Aluno / Atleta</h3>
+        <button type="button" class="btn-close" id="btn-close-aluno">✕</button>
+      </div>
+      <form id="form-aluno">
+        <input type="hidden" id="aluno-id">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="aluno-nome">Nome Completo *</label>
+          <input type="text" id="aluno-nome" class="form-input" placeholder="Ex: Roberto Silveira" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label for="aluno-telefone">Telefone / WhatsApp</label>
+            <input type="tel" id="aluno-telefone" class="form-input" placeholder="(11) 98765-4321">
+          </div>
+          <div class="form-group">
+            <label for="aluno-email">E-mail</label>
+            <input type="email" id="aluno-email" class="form-input" placeholder="aluno@exemplo.com">
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+          <div class="form-group">
+            <label for="aluno-idade">Idade (anos) *</label>
+            <input type="number" id="aluno-idade" class="form-input" min="10" max="90" placeholder="Ex: 34" required>
+          </div>
+          <div class="form-group">
+            <label for="aluno-sexo">Sexo Biológico *</label>
+            <select id="aluno-sexo" class="form-select" required>
+              <option value="Masculino">Masculino</option>
+              <option value="Feminino">Feminino</option>
+            </select>
+          </div>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="form-group">
+            <label for="aluno-peso">Peso (kg) *</label>
+            <input type="number" id="aluno-peso" step="0.1" class="form-input" min="30" max="250" placeholder="Ex: 75.5" required>
+          </div>
+          <div class="form-group">
+            <label for="aluno-altura">Altura (m) *</label>
+            <input type="number" id="aluno-altura" step="0.01" class="form-input" min="1.20" max="2.20" placeholder="Ex: 1.78" required>
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" class="btn-act btn-outline" id="btn-cancel-aluno">Cancelar</button>
+          <button type="submit" class="btn-act btn-primary" id="btn-submit-aluno">+ Cadastrar Aluno</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: CADASTRO / EDIÇÃO DE PROFESSOR -->
+  <div class="modal-backdrop" id="modal-professor" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modal-prof-title">Adicionar Professor / Avaliador</h3>
+        <button type="button" class="btn-close" id="btn-close-prof">✕</button>
+      </div>
+      <form id="form-professor">
+        <input type="hidden" id="prof-id">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="prof-nome">Nome Completo *</label>
+          <input type="text" id="prof-nome" class="form-input" placeholder="Ex: Prof. Dr. Carlos Mendes" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="prof-cref">CREF *</label>
+          <input type="text" id="prof-cref" class="form-input" placeholder="Ex: 012345-G/SP" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+          <div class="form-group">
+            <label for="prof-tel">Telefone</label>
+            <input type="text" id="prof-tel" class="form-input" placeholder="(11) 98765-4321">
+          </div>
+          <div class="form-group">
+            <label for="prof-email">E-mail</label>
+            <input type="email" id="prof-email" class="form-input" placeholder="avaliador@moove.com.br">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+          <button type="button" class="btn-act btn-outline" id="btn-cancel-prof">Cancelar</button>
+          <button type="submit" class="btn-act btn-primary">Salvar Professor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 13. MODAL: RELATÓRIO DE EVOLUÇÃO (Com visual para impressão / PDF) -->
+  <div class="modal-backdrop" id="modal-relatorio" style="display: none;">
+    <div class="modal-box modal-lg" id="relatorio-printable">
+      <div class="modal-header no-print">
+        <h3 class="modal-title">📄 Laudo Cardiorrespiratório & Evolução</h3>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn-act btn-primary btn-sm" id="btn-imprimir-relatorio">🖨️ Imprimir / Salvar PDF</button>
+          <button type="button" class="btn-close" id="btn-close-relatorio">✕</button>
+        </div>
+      </div>
+
+      <!-- Conteúdo do Relatório Oficial -->
+      <div style="padding: 0.5rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--accent); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+          <div>
+            <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent);">INSTITUTO MOOVE</div>
+            <div style="font-size: 0.95rem; font-weight: 600; color: #334155;">Relatório de Evolução Cardiorrespiratória & VO₂ Máximo</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Protocolo Progressivo de Esteira Rolante (Rampa Escalonada +0,5 km/h / 2 min)</div>
+          </div>
+          <div style="text-align: right; font-size: 0.8rem; color: var(--text-muted);">
+            Emissão: <strong id="rel-data-emissao" style="color: var(--text-main);">00/00/0000</strong>
+          </div>
+        </div>
+
+        <!-- Ficha do Avaliado -->
+        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
+          <div>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">AVALIADO(A):</span>
+            <div id="rel-aluno-nome" style="font-weight: 700; color: var(--text-main); font-size: 1rem;">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">IDADE / SEXO:</span>
+            <div id="rel-aluno-perfil" style="font-weight: 600; color: var(--text-main);">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">PESO / ALTURA:</span>
+            <div id="rel-aluno-biometria" style="font-weight: 600; color: var(--text-main);">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">TOTAL DE TESTES:</span>
+            <div id="rel-aluno-total-testes" style="font-weight: 700; color: var(--accent);">0</div>
+          </div>
+        </div>
+
+        <!-- Curva Gráfica de Evolução do VO2 Máximo -->
+        <div style="margin-bottom: 1.5rem;">
+          <h4 style="font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--text-main);">
+            Curva de Evolução Histórica do VO₂ Máximo (mL/kg/min)
+          </h4>
+          <div style="height: 200px; width: 100%; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 8px; box-sizing: border-box;">
+            <svg id="svg-relatorio-evolucao" width="100%" height="100%" viewBox="0 0 700 180" preserveAspectRatio="none"></svg>
+          </div>
+        </div>
+
+        <!-- Tabela Histórica Detalhada -->
+        <h4 style="font-size: 0.95rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--text-main);">
+          Histórico Comparativo dos Testes Realizados
+        </h4>
+        <div class="table-responsive" style="margin-bottom: 1.5rem;">
+          <table class="data-table" style="font-size: 0.8rem;">
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Vel. Final</th>
+                <th>VO₂ Máx</th>
+                <th>Classificação ACSM</th>
+                <th>Queda 1 min</th>
+                <th>Avaliador Responsável</th>
+              </tr>
+            </thead>
+            <tbody id="tbody-relatorio-testes">
+              <!-- Renderizado via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Rodapé do Laudo -->
+        <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.8rem; color: var(--text-muted); flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div><strong>Instituto Moove</strong> — Fisiologia do Exercício & Avaliação Física</div>
+            <div>Padrões ACSM (American College of Sports Medicine) & The Cooper Institute</div>
+          </div>
+          <div style="text-align: right; min-width: 220px; border-top: 1px solid #94a3b8; padding-top: 0.4rem;">
+            <span id="rel-assinatura-avaliador" style="font-weight: 600; color: var(--text-main);">Prof. Responsável</span><br>
+            <span>Assinatura do Fisiologista</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: LAUDO INDIVIDUAL PARA IMPRESSÃO / SALVAR PDF -->
+  <div class="modal-backdrop" id="modal-laudo-individual" style="display: none;">
+    <div class="modal-box modal-lg" id="laudo-individual-printable">
+      <div class="modal-header no-print">
+        <h3 class="modal-title">📄 Laudo Individual do Teste de VO₂ Máximo</h3>
+        <div style="display: flex; gap: 0.5rem;">
+          <button type="button" class="btn-act btn-primary btn-sm" id="btn-imprimir-laudo-ind">🖨️ Imprimir / Salvar em PDF</button>
+          <button type="button" class="btn-close" id="btn-close-laudo-ind">✕</button>
+        </div>
+      </div>
+
+      <div style="padding: 0.5rem;" id="conteudo-laudo-individual">
+        <!-- Cabeçalho Oficial -->
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--accent); padding-bottom: 1rem; margin-bottom: 1.25rem;">
+          <div>
+            <div style="font-size: 1.35rem; font-weight: 800; color: var(--accent);">INSTITUTO MOOVE</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: #1e293b;">Avaliação Fisiológica & Teste VO₂ Máximo</div>
+            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">Protocolo Progressivo de Esteira Rolante (Rampa Escalonada +0,5 km/h / 2 min)</div>
+          </div>
+          <div style="text-align: right; font-size: 0.82rem; color: var(--text-muted);">
+            Data do Teste: <strong id="ind-data-teste" style="color: var(--text-main); font-size: 0.95rem;">00/00/0000</strong>
+          </div>
+        </div>
+
+        <!-- Dados do Aluno -->
+        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem;">
+          <div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Aluno / Atleta</span>
+            <div id="ind-aluno-nome" style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Idade / Sexo</span>
+            <div id="ind-aluno-perfil" style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Peso / Altura</span>
+            <div id="ind-aluno-biometria" style="font-weight: 600; color: var(--text-main); font-size: 0.9rem;">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Contato</span>
+            <div id="ind-aluno-contato" style="font-weight: 600; color: var(--text-main); font-size: 0.85rem;">—</div>
+          </div>
+        </div>
+
+        <!-- Resumo dos Resultados do Teste -->
+        <h4 style="font-size: 0.92rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--text-main);">
+          Resultados do Desfecho Máximo
+        </h4>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+          <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
+            <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Velocidade Final</div>
+            <div id="ind-res-vel" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">0.0 km/h</div>
+          </div>
+          <div style="background: #f0fdfa; border: 1px solid var(--accent-border); border-radius: 6px; padding: 0.65rem; text-align: center;">
+            <div style="font-size: 0.7rem; color: var(--accent); text-transform: uppercase; font-weight: 700;">VO₂ Máximo</div>
+            <div id="ind-res-vo2" style="font-size: 1.3rem; font-weight: 800; color: var(--accent);">0.0 mL/kg/min</div>
+          </div>
+          <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
+            <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">METs Máximo</div>
+            <div id="ind-res-mets" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">0.0</div>
+          </div>
+          <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
+            <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Duração Total</div>
+            <div id="ind-res-duracao" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">00:00</div>
+          </div>
+          <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
+            <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Classificação ACSM</div>
+            <div id="ind-res-classif" style="font-size: 1.15rem; font-weight: 800; color: #047857; margin-top: 0.15rem;">—</div>
+          </div>
+        </div>
+
+        <!-- Tabela de Estágios Realizados -->
+        <h4 style="font-size: 0.92rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--text-main);">
+          Progressão dos Estágios & Respostas Cardiorrespiratórias
+        </h4>
+        <div class="table-responsive" style="margin-bottom: 1.25rem;">
+          <table class="data-table" style="font-size: 0.78rem;">
+            <thead>
+              <tr>
+                <th>Estágio</th>
+                <th>Velocidade</th>
+                <th>METs</th>
+                <th>FC (bpm)</th>
+                <th>PSE Borg</th>
+                <th>Talk Test</th>
+                <th>Observações</th>
+              </tr>
+            </thead>
+            <tbody id="ind-tbody-estagios">
+              <!-- Renderizado via JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Recuperação Cardíaca -->
+        <h4 style="font-size: 0.92rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--text-main);">
+          Cinética de Recuperação Cardíaca (2 min ativos a 4,5 km/h)
+        </h4>
+        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem;">
+          <div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">FC Pico:</span>
+            <div id="ind-rec-pico" style="font-weight: 700; color: var(--text-main); font-size: 1rem;">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">FC 60s (1 min):</span>
+            <div id="ind-rec-fc60" style="font-weight: 700; color: var(--text-main); font-size: 1rem;">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Queda 1 min:</span>
+            <div id="ind-rec-queda1" style="font-weight: 700; color: var(--text-main); font-size: 1rem;">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">FC 120s (2 min):</span>
+            <div id="ind-rec-fc120" style="font-weight: 700; color: var(--text-main); font-size: 1rem;">—</div>
+          </div>
+          <div>
+            <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">Queda 2 min:</span>
+            <div id="ind-rec-queda2" style="font-weight: 700; color: var(--text-main); font-size: 1rem;">—</div>
+          </div>
+        </div>
+
+        <!-- Observações Finais do Avaliador -->
+        <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem;">
+          <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">
+            Observações Finais & Parecer do Avaliador Responsável
+          </div>
+          <div id="ind-obs-finais" style="font-size: 0.85rem; color: #334155; line-height: 1.5; font-style: italic;">
+            Sem observações adicionais.
+          </div>
+        </div>
+
+        <!-- Rodapé do Laudo Individual -->
+        <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-subtle); display: flex; justify-content: space-between; align-items: flex-end; font-size: 0.78rem; color: var(--text-muted); flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <div><strong>Instituto Moove</strong> — Fisiologia do Exercício | Avaliador: <span id="ind-rodape-avaliador" style="font-weight: 600; color: var(--text-main);">—</span></div>
+            <div>Diretrizes ACSM (American College of Sports Medicine) & The Cooper Institute</div>
+          </div>
+          <div style="text-align: right; min-width: 200px; border-top: 1px solid #94a3b8; padding-top: 0.35rem;">
+            <span id="ind-assinatura-avaliador" style="font-weight: 600; color: var(--text-main);">Prof. Responsável</span><br>
+            <span>Assinatura do Fisiologista</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+  <script>
+    // --- ESTADO GLOBAL & PERSISTÊNCIA ---
+    const STORAGE_KEYS = {
+      ALUNOS: 'moove_alunos',
+      PROFESSORES: 'moove_professores',
+      AVALIACOES: 'moove_avaliacoes',
+      CONFIG: 'moove_config',
+      EXCLUIDOS: 'moove_excluidos'
+    };
+
+    // Dados Iniciais Realistas (Mock)
+    const DEFAULT_PROFESSORES = [
+      { id: 'p1', nome: 'Prof. Dr. Ricardo Matos', cref: '045920-G/SP', tel: '(11) 98122-3344', email: 'ricardo@moove.com.br', ativo: true },
+      { id: 'p2', nome: 'Profª. Marcela Esteves', cref: '068210-G/SP', tel: '(11) 97233-4455', email: 'marcela@moove.com.br', ativo: true }
+    ];
+
+    const DEFAULT_ALUNOS = [
+      { id: 'a1', nome: 'Gabriel Vasconcelos', idade: 28, sexo: 'Masculino', peso: 74.2, altura: 1.77, telefone: '(11) 98123-4567', email: 'gabriel.vasconcelos@email.com' },
+      { id: 'a2', nome: 'Camila Duarte Fontes', idade: 33, sexo: 'Feminino', peso: 59.0, altura: 1.64, telefone: '(11) 99876-5432', email: 'camila.duarte@email.com' },
+      { id: 'a3', nome: 'Eduardo Silveira Lima', idade: 45, sexo: 'Masculino', peso: 82.5, altura: 1.80, telefone: '(21) 97654-3210', email: 'eduardo.lima@email.com' }
+    ];
+
+    const DEFAULT_AVALIACOES = [
+      {
+        id: 'ev1',
+        alunoId: 'a1',
+        alunoNome: 'Gabriel Vasconcelos',
+        data: '15/01/2025',
+        timestamp: Date.now() - 30 * 86400000,
+        velFinal: 14.5,
+        vo2Max: 50.8,
+        metsMax: 14.5,
+        duracaoSegundos: 1680,
+        fcPico: 188,
+        fc60s: 162,
+        fc120s: 146,
+        queda1min: 26,
+        queda2min: 42,
+        classificacao: 'Excelente',
+        avaliador: 'Prof. Dr. Ricardo Matos',
+        obs: 'Excelente perfil de potência aeróbia e recuperação rápida.',
+        estagiosSnapshot: [
+          { estagio: 1, velocidade: 8.0, mets: 8.0, fc: 122, borg: 2, talkTest: 'Fala normal (confortável)', obs: 'Adaptação excelente' },
+          { estagio: 2, velocidade: 8.5, mets: 8.5, fc: 130, borg: 3, talkTest: 'Fala normal (confortável)', obs: 'Estável' },
+          { estagio: 3, velocidade: 9.0, mets: 9.0, fc: 138, borg: 4, talkTest: 'Fala normal (confortável)', obs: 'Ritmo constante' },
+          { estagio: 4, velocidade: 9.5, mets: 9.5, fc: 145, borg: 5, talkTest: 'Fala entrecortada / difícil', obs: 'Início de ventilação profunda' },
+          { estagio: 5, velocidade: 10.0, mets: 10.0, fc: 154, borg: 6, talkTest: 'Fala entrecortada / difícil', obs: 'Boa mecânica' },
+          { estagio: 6, velocidade: 10.5, mets: 10.5, fc: 162, borg: 7, talkTest: 'Fala entrecortada / difícil', obs: 'Sudorese moderada' },
+          { estagio: 7, velocidade: 11.0, mets: 11.0, fc: 170, borg: 8, talkTest: 'Incapaz de falar continuamente', obs: 'Esforço intenso' },
+          { estagio: 8, velocidade: 14.5, mets: 14.5, fc: 188, borg: 10, talkTest: 'Incapaz de falar continuamente', obs: 'Pico de esforço atingido' }
+        ]
+      },
+      {
+        id: 'ev2',
+        alunoId: 'a1',
+        alunoNome: 'Gabriel Vasconcelos',
+        data: '18/02/2025',
+        timestamp: Date.now() - 5 * 86400000,
+        velFinal: 15.0,
+        vo2Max: 52.5,
+        metsMax: 15.0,
+        duracaoSegundos: 1800,
+        fcPico: 190,
+        fc60s: 158,
+        fc120s: 140,
+        queda1min: 32,
+        queda2min: 50,
+        classificacao: 'Superior',
+        avaliador: 'Prof. Dr. Ricardo Matos',
+        obs: 'Evolução consistente na tolerância a cargas elevadas.',
+        estagiosSnapshot: [
+          { estagio: 1, velocidade: 8.0, mets: 8.0, fc: 118, borg: 2, talkTest: 'Fala normal (confortável)', obs: 'Confortável' },
+          { estagio: 2, velocidade: 8.5, mets: 8.5, fc: 125, borg: 3, talkTest: 'Fala normal (confortável)', obs: 'Estável' },
+          { estagio: 3, velocidade: 9.0, mets: 9.0, fc: 133, borg: 3, talkTest: 'Fala normal (confortável)', obs: 'Economia de corrida notória' },
+          { estagio: 4, velocidade: 9.5, mets: 9.5, fc: 141, borg: 4, talkTest: 'Fala normal (confortável)', obs: 'Transição tranquila' },
+          { estagio: 5, velocidade: 10.0, mets: 10.0, fc: 149, borg: 5, talkTest: 'Fala entrecortada / difícil', obs: 'Aceleração controlada' },
+          { estagio: 6, velocidade: 11.0, mets: 11.0, fc: 161, borg: 7, talkTest: 'Fala entrecortada / difícil', obs: 'Boa tolerância' },
+          { estagio: 7, velocidade: 13.0, mets: 13.0, fc: 174, borg: 8, talkTest: 'Incapaz de falar continuamente', obs: 'Cadência elevada' },
+          { estagio: 8, velocidade: 15.0, mets: 15.0, fc: 190, borg: 10, talkTest: 'Incapaz de falar continuamente', obs: 'Exaustão voluntária no pico' }
+        ]
+      }
+    ];
+
+    const appState = {
+      alunos: [],
+      professores: [],
+      avaliacoes: [],
+      excluidos: {
+        alunos: [],
+        professores: [],
+        avaliacoes: []
+      },
+      config: {
+        sheetsUrl: '',
+        protocolo: {
+          velocidadeInicial: 8.0,
+          totalEstagios: 12,
+          tempoEstagio: 120,
+          incrementoVel: 0.5
+        }
+      },
+      selectedAlunoId: null,
+      selectedProfNome: '',
+      
+      // Estado de Sincronização
+      isSyncing: false,
+      lastSyncTimestamp: null,
+      syncDebounceTimer: null,
+
+      // Estado da Sessão Atual de Teste
+      testActive: false,
+      timerInterval: null,
+      tempoRestanteNoEstagio: 120,
+      tempoTotalEfetivo: 0,
+      estagioAtualIndex: 1,
+      estagiosDados: [],
+      
+      // Recuperação
+      recTimerInterval: null,
+      recTempoRestante: 120
+    };
+
+    // Inicialização dos Estágios baseado nas configurações do protocolo
+    function buildEmptyEstagios() {
+      const arr = [];
+      const cfg = (appState.config && appState.config.protocolo) || {};
+      const total = cfg.totalEstagios || 12;
+      const inc = cfg.incrementoVel !== undefined ? cfg.incrementoVel : 0.5;
+      const velIni = (cfg.velocidadeInicial !== undefined && !isNaN(cfg.velocidadeInicial)) ? cfg.velocidadeInicial : 8.0;
+      for (let i = 1; i <= total; i++) {
+        const vel = parseFloat((velIni + (i - 1) * inc).toFixed(1));
+        const mets = parseFloat((vel * 3.5 / 3.5).toFixed(1));
+        arr.push({
+          estagio: i,
+          velocidade: vel,
+          mets: mets,
+          fc: null,
+          borg: null,
+          talkTest: '',
+          obs: '',
+          status: 'Pendente'
+        });
+      }
+      return arr;
+    }
+
+    function updateProtocolBadge() {
+      const cfg = appState.config.protocolo;
+      const velIni = (cfg && cfg.velocidadeInicial !== undefined && !isNaN(cfg.velocidadeInicial)) ? cfg.velocidadeInicial : 8.0;
+      const velIniStr = velIni.toFixed(1).replace('.', ',');
+      const incStr = (cfg.incrementoVel !== undefined ? cfg.incrementoVel : 0.5).toFixed(1).replace('.', ',');
+      const badge = document.getElementById('badge-protocolo-info');
+      if (badge) {
+        badge.textContent = `Protocolo: início ${velIniStr} km/h · +${incStr} km/h / ${cfg.tempoEstagio}s`;
+      }
+    }
+
+    function applyProtocolConfig(notify = true) {
+      const velIniInput = parseFloat(document.getElementById('cfg-velocidade-inicial').value);
+      const totalInput = parseInt(document.getElementById('cfg-total-estagios').value, 10);
+      const tempoInput = parseInt(document.getElementById('cfg-tempo-estagio').value, 10);
+      const incInput = parseFloat(document.getElementById('cfg-incremento-vel').value);
+
+      const velocidadeInicial = Math.min(16.0, Math.max(4.0, isNaN(velIniInput) ? 8.0 : Math.round(velIniInput * 10) / 10));
+      const totalEstagios = Math.min(30, Math.max(1, isNaN(totalInput) ? 12 : totalInput));
+      const tempoEstagio = Math.min(600, Math.max(30, isNaN(tempoInput) ? 120 : tempoInput));
+      const incrementoVel = Math.min(2.0, Math.max(0.1, isNaN(incInput) ? 0.5 : Math.round(incInput * 10) / 10));
+
+      document.getElementById('cfg-velocidade-inicial').value = velocidadeInicial.toFixed(1);
+      document.getElementById('cfg-total-estagios').value = totalEstagios;
+      document.getElementById('cfg-tempo-estagio').value = tempoEstagio;
+      document.getElementById('cfg-incremento-vel').value = incrementoVel.toFixed(1);
+
+      appState.config.protocolo = { velocidadeInicial, totalEstagios, tempoEstagio, incrementoVel };
+      saveStorage();
+
+      // Atualiza lista de estágios recalculando a velocidade inicial + incrementos
+      const oldDados = appState.estagiosDados || [];
+      const newDados = [];
+      for (let i = 1; i <= totalEstagios; i++) {
+        const vel = parseFloat((velocidadeInicial + (i - 1) * incrementoVel).toFixed(1));
+        const mets = parseFloat((vel * 3.5 / 3.5).toFixed(1));
+        const prev = oldDados.find(s => s.estagio === i);
+        newDados.push({
+          estagio: i,
+          velocidade: vel,
+          mets: mets,
+          fc: prev ? prev.fc : null,
+          borg: prev ? prev.borg : null,
+          talkTest: prev ? prev.talkTest : '',
+          obs: prev ? prev.obs : '',
+          status: prev ? prev.status : 'Pendente'
+        });
+      }
+      appState.estagiosDados = newDados;
+
+      if (appState.estagioAtualIndex > totalEstagios) {
+        appState.estagioAtualIndex = totalEstagios;
+      }
+
+      if (!appState.testActive) {
+        appState.tempoRestanteNoEstagio = tempoEstagio;
+        document.getElementById('monitor-tempo').textContent = formatTimeMMSS(appState.tempoRestanteNoEstagio);
+      }
+
+      updateProtocolBadge();
+      updateMonitorHeader();
+      renderEstagiosTable();
+      atualizarCalculosDesfecho();
+
+      if (notify) {
+        const badge = document.getElementById('badge-protocolo-info');
+        if (badge) {
+          badge.style.transform = 'scale(1.08)';
+          setTimeout(() => { badge.style.transform = 'scale(1)'; }, 200);
+        }
+      }
+    }
+
+    // PERSISTÊNCIA LOCALSTORAGE & NORMALIZAÇÃO DE TIMESTAMP
+    function loadStorage() {
+      try {
+        const al = localStorage.getItem(STORAGE_KEYS.ALUNOS);
+        appState.alunos = al ? JSON.parse(al) : DEFAULT_ALUNOS;
+
+        const pr = localStorage.getItem(STORAGE_KEYS.PROFESSORES);
+        appState.professores = pr ? JSON.parse(pr) : DEFAULT_PROFESSORES;
+
+        const av = localStorage.getItem(STORAGE_KEYS.AVALIACOES);
+        appState.avaliacoes = av ? JSON.parse(av) : DEFAULT_AVALIACOES;
+
+        const exc = localStorage.getItem(STORAGE_KEYS.EXCLUIDOS);
+        if (exc) {
+          const parsedExc = JSON.parse(exc);
+          appState.excluidos = {
+            alunos: Array.isArray(parsedExc.alunos) ? parsedExc.alunos : [],
+            professores: Array.isArray(parsedExc.professores) ? parsedExc.professores : [],
+            avaliacoes: Array.isArray(parsedExc.avaliacoes) ? parsedExc.avaliacoes : []
+          };
+        } else {
+          appState.excluidos = { alunos: [], professores: [], avaliacoes: [] };
+        }
+
+        const cfg = localStorage.getItem(STORAGE_KEYS.CONFIG);
+        if (cfg) {
+          const parsed = JSON.parse(cfg);
+          appState.config = { ...appState.config, ...parsed };
+        }
+        if (!appState.config.protocolo) {
+          appState.config.protocolo = { velocidadeInicial: 8.0, totalEstagios: 12, tempoEstagio: 120, incrementoVel: 0.5 };
+        } else {
+          appState.config.protocolo.velocidadeInicial = parseFloat(appState.config.protocolo.velocidadeInicial) || 8.0;
+          appState.config.protocolo.totalEstagios = parseInt(appState.config.protocolo.totalEstagios, 10) || 12;
+          appState.config.protocolo.tempoEstagio = parseInt(appState.config.protocolo.tempoEstagio, 10) || 120;
+          appState.config.protocolo.incrementoVel = parseFloat(appState.config.protocolo.incrementoVel) || 0.5;
+        }
+
+        // Carrega timestamp de última sincronização
+        appState.lastSyncTimestamp = localStorage.getItem('moove_ultima_sync') || null;
+
+        // Requisito 1: Garantir campo "atualizadoEm" em todos os registros antigos
+        const nowIso = new Date().toISOString();
+        let changed = false;
+
+        appState.alunos.forEach(a => {
+          if (!a.atualizadoEm) { a.atualizadoEm = nowIso; changed = true; }
+          if (!a.criadoEm) { a.criadoEm = nowIso; changed = true; }
+        });
+        appState.professores.forEach(p => {
+          if (!p.atualizadoEm) { p.atualizadoEm = nowIso; changed = true; }
+          if (p.tel && !p.telefone) p.telefone = p.tel;
+        });
+        appState.avaliacoes.forEach(ev => {
+          if (!ev.atualizadoEm) { ev.atualizadoEm = nowIso; changed = true; }
+        });
+
+        // Requisito 2: Eliminar qualquer registro local que esteja na lista de excluídos
+        appState.alunos = appState.alunos.filter(a => !appState.excluidos.alunos.includes(a.id));
+        appState.professores = appState.professores.filter(p => !appState.excluidos.professores.includes(p.id));
+        appState.avaliacoes = appState.avaliacoes.filter(ev => !appState.excluidos.avaliacoes.includes(ev.id));
+
+        if (changed) {
+          saveStorage(false);
+        }
+      } catch (err) {
+        console.error('Erro ao ler localStorage', err);
+        appState.alunos = DEFAULT_ALUNOS;
+        appState.professores = DEFAULT_PROFESSORES;
+        appState.avaliacoes = DEFAULT_AVALIACOES;
+        appState.excluidos = { alunos: [], professores: [], avaliacoes: [] };
+      }
+    }
+
+    function saveStorage(triggerDebounce = true) {
+      try {
+        localStorage.setItem(STORAGE_KEYS.ALUNOS, JSON.stringify(appState.alunos));
+        localStorage.setItem(STORAGE_KEYS.PROFESSORES, JSON.stringify(appState.professores));
+        localStorage.setItem(STORAGE_KEYS.AVALIACOES, JSON.stringify(appState.avaliacoes));
+        localStorage.setItem(STORAGE_KEYS.EXCLUIDOS, JSON.stringify(appState.excluidos));
+        localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(appState.config));
+        
+        if (triggerDebounce) {
+          queueDebouncedSync();
+        }
+      } catch (err) {
+        console.error('Erro ao salvar localStorage', err);
+      }
+    }
+
+    // REGISTRO DE EXCLUSÃO
+    function registrarExclusao(tipo, id) {
+      if (!appState.excluidos[tipo]) appState.excluidos[tipo] = [];
+      if (!appState.excluidos[tipo].includes(id)) {
+        appState.excluidos[tipo].push(id);
+      }
+    }
+
+    // GATILHO DE DEBOUNCE DE 2 SEGUNDOS
+    function queueDebouncedSync() {
+      if (!appState.config.sheetsUrl || !appState.config.sheetsUrl.startsWith('http')) {
+        updateSyncStatusUI('offline');
+        return;
+      }
+      if (appState.syncDebounceTimer) {
+        clearTimeout(appState.syncDebounceTimer);
+      }
+      appState.syncDebounceTimer = setTimeout(() => {
+        syncNow();
+      }, 2000);
+    }
+
+    function formatLastSyncTimeDisplay(isoStr) {
+      if (!isoStr) return 'Nunca';
+      try {
+        const d = new Date(isoStr);
+        if (isNaN(d.getTime())) return 'Nunca';
+        const dateStr = d.toLocaleDateString('pt-BR');
+        const timeStr = d.toLocaleTimeString('pt-BR');
+        return `${dateStr} às ${timeStr}`;
+      } catch(e) {
+        return 'Nunca';
+      }
+    }
+
+    // ATUALIZAÇÃO VISUAL DE STATUS (APENAS STATUS AMIGÁVEL — NUNCA DADOS BRUTOS)
+    function updateSyncStatusUI(status) {
+      const statusEl = document.getElementById('sync-status');
+      const dotEl = document.getElementById('sync-dot');
+      const txtEl = document.getElementById('sync-text');
+      const subtxtEl = document.getElementById('sync-subtext');
+      const mStatusEl = document.getElementById('modal-sync-status-badge');
+      const mDotEl = document.getElementById('modal-sync-dot');
+      const mTxtEl = document.getElementById('modal-sync-text');
+      const mLastTimeEl = document.getElementById('modal-last-sync-time');
+
+      const formattedTime = formatLastSyncTimeDisplay(appState.lastSyncTimestamp);
+
+      if (status === 'online') {
+        const text = 'Online — sincronizado';
+        if (statusEl) statusEl.className = 'sync-status-badge online';
+        if (dotEl) dotEl.textContent = '🟢';
+        if (txtEl) txtEl.textContent = text;
+        if (subtxtEl) subtxtEl.textContent = `Sincronizado (${formattedTime})`;
+        if (mStatusEl) mStatusEl.className = 'sync-status-badge online';
+        if (mDotEl) mDotEl.textContent = '🟢';
+        if (mTxtEl) mTxtEl.textContent = text;
+        if (mLastTimeEl) mLastTimeEl.textContent = `Última sincronização: ${formattedTime}`;
+      } else {
+        const text = 'Offline — dados locais';
+        if (statusEl) statusEl.className = 'sync-status-badge offline';
+        if (dotEl) dotEl.textContent = '🟠';
+        if (txtEl) txtEl.textContent = text;
+        if (subtxtEl) subtxtEl.textContent = 'Os dados estão salvos neste aparelho. Configure a sincronização para usar em outros dispositivos.';
+        if (mStatusEl) mStatusEl.className = 'sync-status-badge offline';
+        if (mDotEl) mDotEl.textContent = '🟠';
+        if (mTxtEl) mTxtEl.textContent = text;
+        if (mLastTimeEl) mLastTimeEl.textContent = `Última sincronização: ${formattedTime}`;
+      }
+    }
+
+    // FORMATADOR DE PAYLOAD PADRONIZADO
+    function buildSyncPayload() {
+      const alunosNorm = appState.alunos.map(a => ({
+        id: a.id,
+        nome: a.nome,
+        idade: a.idade,
+        sexo: a.sexo,
+        peso: a.peso,
+        altura: a.altura,
+        telefone: a.telefone || '',
+        email: a.email || '',
+        criadoEm: a.criadoEm || a.atualizadoEm || new Date().toISOString(),
+        atualizadoEm: a.atualizadoEm || new Date().toISOString()
+      }));
+
+      const profsNorm = appState.professores.map(p => ({
+        id: p.id,
+        nome: p.nome,
+        cref: p.cref,
+        telefone: p.telefone || p.tel || '',
+        email: p.email || '',
+        ativo: p.ativo !== false,
+        atualizadoEm: p.atualizadoEm || new Date().toISOString()
+      }));
+
+      const avalsNorm = appState.avaliacoes.map(ev => {
+        const velFinal = ev.velocidadeFinal || ev.velFinal || 8.0;
+        const vo2 = ev.vo2max || ev.vo2Max || parseFloat((velFinal * 3.5).toFixed(1));
+        const mets = ev.metsMax || parseFloat((vo2 / 3.5).toFixed(1));
+        const fc60Val = ev.fc60 !== undefined ? ev.fc60 : (ev.fc60s !== undefined ? ev.fc60s : null);
+        const fc120Val = ev.fc120 !== undefined ? ev.fc120 : (ev.fc120s !== undefined ? ev.fc120s : null);
+        const q1Val = ev.queda1 !== undefined ? ev.queda1 : (ev.queda1min !== undefined ? ev.queda1min : null);
+        const q2Val = ev.queda2 !== undefined ? ev.queda2 : (ev.queda2min !== undefined ? ev.queda2min : null);
+
+        return {
+          id: ev.id,
+          alunoId: ev.alunoId,
+          alunoNome: ev.alunoNome || '',
+          data: ev.data || new Date().toLocaleDateString('pt-BR'),
+          timestamp: ev.timestamp || Date.now(),
+          estagios: ev.estagios || ev.estagiosSnapshot || [],
+          estagiosSnapshot: ev.estagiosSnapshot || ev.estagios || [],
+          velocidadeFinal: velFinal,
+          velFinal: velFinal,
+          vo2max: vo2,
+          vo2Max: vo2,
+          metsMax: mets,
+          duracaoTotal: ev.duracaoTotal !== undefined ? ev.duracaoTotal : (ev.duracaoSegundos || 0),
+          duracaoSegundos: ev.duracaoSegundos !== undefined ? ev.duracaoSegundos : (ev.duracaoTotal || 0),
+          fcPico: ev.fcPico || null,
+          fc60: fc60Val,
+          fc60s: fc60Val,
+          fc120: fc120Val,
+          fc120s: fc120Val,
+          queda1: q1Val,
+          queda1min: q1Val,
+          queda2: q2Val,
+          queda2min: q2Val,
+          classificacaoRecuperacao: ev.classificacaoRecuperacao || ev.classificacao || '',
+          classificacao: ev.classificacao || ev.classificacaoRecuperacao || '',
+          observacoesFinais: ev.observacoesFinais || ev.obs || '',
+          obs: ev.obs || ev.observacoesFinais || '',
+          avaliador: ev.avaliador || 'Prof. Responsável',
+          configProtocolo: ev.configProtocolo || {
+            estagios: appState.config.protocolo.totalEstagios,
+            tempoEstagio: appState.config.protocolo.tempoEstagio,
+            incremento: appState.config.protocolo.incrementoVel,
+            velocidadeInicial: appState.config.protocolo.velocidadeInicial || 8.0
+          },
+          atualizadoEm: ev.atualizadoEm || new Date().toISOString()
+        };
+      });
+
+      return {
+        alunos: alunosNorm,
+        professores: profsNorm,
+        avaliacoes: avalsNorm,
+        config: {
+          estagios: appState.config.protocolo.totalEstagios,
+          tempoEstagio: appState.config.protocolo.tempoEstagio,
+          incremento: appState.config.protocolo.incrementoVel,
+          velocidadeInicial: appState.config.protocolo.velocidadeInicial || 8.0,
+          protocolo: appState.config.protocolo
+        },
+        excluidos: {
+          alunos: Array.from(new Set(appState.excluidos.alunos || [])),
+          professores: Array.from(new Set(appState.excluidos.professores || [])),
+          avaliacoes: Array.from(new Set(appState.excluidos.avaliacoes || []))
+        }
+      };
+    }
+
+    // MESCLAGEM COERENTE POR TIMESTAMP (MAIS RECENTE VENCE)
+    function mergeColecao(localList, remoteList, listaExcluidos) {
+      const excluidosSet = new Set(listaExcluidos || []);
+      const map = new Map();
+
+      // Registros locais válidos
+      localList.forEach(item => {
+        if (!item || !item.id || excluidosSet.has(item.id)) return;
+        map.set(item.id, { ...item });
+      });
+
+      // Comparação com registros da nuvem
+      (remoteList || []).forEach(remoteItem => {
+        if (!remoteItem || !remoteItem.id || excluidosSet.has(remoteItem.id)) return;
+
+        if (!map.has(remoteItem.id)) {
+          // Só na nuvem -> adicionar local
+          map.set(remoteItem.id, { ...remoteItem });
+        } else {
+          // Existe em ambos -> comparar atualizadoEm
+          const localItem = map.get(remoteItem.id);
+          const tLocal = new Date(localItem.atualizadoEm || 0).getTime();
+          const tRemote = new Date(remoteItem.atualizadoEm || 0).getTime();
+
+          if (tRemote > tLocal) {
+            map.set(remoteItem.id, { ...localItem, ...remoteItem });
+          }
+        }
+      });
+
+      return Array.from(map.values());
+    }
+
+    // EXECUÇÃO COM RETRY E BACKOFF EXPONENCIAL (2s, 4s, 8s)
+    async function executeWithRetry(asyncFn, maxRetries = 3, delays = [2000, 4000, 8000]) {
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        try {
+          return await asyncFn();
+        } catch (err) {
+          if (attempt < maxRetries) {
+            await new Promise(res => setTimeout(res, delays[attempt] || 2000));
+          } else {
+            throw err;
+          }
+        }
+      }
+    }
+
+    // 3. FUNÇÃO syncNow() COMPLETA (CORS CORRETO, RETRY E NUNCA EXIBE JSON NO DOM)
+    async function syncNow() {
+      const url = appState.config.sheetsUrl ? appState.config.sheetsUrl.trim() : '';
+
+      if (!url || !url.startsWith('http')) {
+        updateSyncStatusUI('offline');
+        return false;
+      }
+
+      if (appState.isSyncing) return false;
+      appState.isSyncing = true;
+
+      try {
+        // 1. GET para buscar dados da nuvem com Retry Backoff (2s, 4s, 8s)
+        let remoteData = null;
+        try {
+          remoteData = await executeWithRetry(async () => {
+            const getRes = await fetch(url, { method: 'GET', cache: 'no-store' });
+            if (!getRes.ok) throw new Error(`HTTP ${getRes.status}`);
+            const json = await getRes.json();
+            return (json && json.data && typeof json.data === 'object') ? json.data : (json && typeof json === 'object' ? json : null);
+          }, 3, [2000, 4000, 8000]);
+        } catch (getErr) {
+          console.warn('Falha na busca GET na nuvem após retries:', getErr);
+        }
+
+        let localMudou = false;
+
+        // Se obteve objeto válido da nuvem, mescla com dados locais
+        if (remoteData && typeof remoteData === 'object') {
+          const remExc = remoteData.excluidos || {};
+          appState.excluidos.alunos = Array.from(new Set([...(appState.excluidos.alunos || []), ...(remExc.alunos || [])]));
+          appState.excluidos.professores = Array.from(new Set([...(appState.excluidos.professores || []), ...(remExc.professores || [])]));
+          appState.excluidos.avaliacoes = Array.from(new Set([...(appState.excluidos.avaliacoes || []), ...(remExc.avaliacoes || [])]));
+
+          if (Array.isArray(remoteData.alunos)) {
+            const merged = mergeColecao(appState.alunos, remoteData.alunos, appState.excluidos.alunos);
+            if (JSON.stringify(merged) !== JSON.stringify(appState.alunos)) localMudou = true;
+            appState.alunos = merged;
+          }
+          if (Array.isArray(remoteData.professores)) {
+            const merged = mergeColecao(appState.professores, remoteData.professores, appState.excluidos.professores);
+            if (JSON.stringify(merged) !== JSON.stringify(appState.professores)) localMudou = true;
+            appState.professores = merged;
+          }
+          if (Array.isArray(remoteData.avaliacoes)) {
+            const merged = mergeColecao(appState.avaliacoes, remoteData.avaliacoes, appState.excluidos.avaliacoes);
+            if (JSON.stringify(merged) !== JSON.stringify(appState.avaliacoes)) localMudou = true;
+            appState.avaliacoes = merged;
+          }
+
+          if (remoteData.config && (remoteData.config.estagios || remoteData.config.velocidadeInicial !== undefined || remoteData.config.protocolo)) {
+            const rCfg = remoteData.config;
+            const rProt = remoteData.config.protocolo || {};
+            if (rCfg.velocidadeInicial !== undefined || rProt.velocidadeInicial !== undefined) {
+              appState.config.protocolo.velocidadeInicial = parseFloat(rCfg.velocidadeInicial !== undefined ? rCfg.velocidadeInicial : rProt.velocidadeInicial) || 8.0;
+            }
+            if (rCfg.estagios || rProt.totalEstagios) {
+              appState.config.protocolo.totalEstagios = parseInt(rCfg.estagios || rProt.totalEstagios, 10) || appState.config.protocolo.totalEstagios;
+            }
+            if (rCfg.tempoEstagio || rProt.tempoEstagio) {
+              appState.config.protocolo.tempoEstagio = parseInt(rCfg.tempoEstagio || rProt.tempoEstagio, 10) || appState.config.protocolo.tempoEstagio;
+            }
+            if (rCfg.incremento !== undefined || rProt.incrementoVel !== undefined) {
+              appState.config.protocolo.incrementoVel = parseFloat(rCfg.incremento !== undefined ? rCfg.incremento : rProt.incrementoVel) || appState.config.protocolo.incrementoVel;
+            }
+          }
+
+          saveStorage(false);
+          renderAlunosTable(document.getElementById('input-busca-aluno')?.value || '');
+          renderProfessores();
+          renderHistorico();
+          renderEnvioSection();
+        }
+
+        // 2. Envia POST com o payload completo mesclado
+        // Usar headers: { 'Content-Type': 'text/plain' } (NUNCA application/json)
+        const payload = buildSyncPayload();
+        let postSuccess = false;
+
+        try {
+          await executeWithRetry(async () => {
+            const postRes = await fetch(url, {
+              method: 'POST',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify(payload)
+            });
+            if (postRes.ok || postRes.type === 'opaque') {
+              try { await postRes.json(); } catch (_) {}
+              return true;
+            }
+            throw new Error(`POST status ${postRes.status}`);
+          }, 3, [2000, 4000, 8000]);
+          postSuccess = true;
+        } catch (postErr) {
+          // Tenta modo fallback no-cors se fetch normal falhou por política de redirecionamento
+          try {
+            await fetch(url, {
+              method: 'POST',
+              mode: 'no-cors',
+              headers: { 'Content-Type': 'text/plain' },
+              body: JSON.stringify(payload)
+            });
+            postSuccess = true;
+          } catch (fallbackErr) {
+            console.warn('Falha no envio POST:', fallbackErr);
+          }
+        }
+
+        if (postSuccess || remoteData) {
+          const nowIso = new Date().toISOString();
+          appState.lastSyncTimestamp = nowIso;
+          localStorage.setItem('moove_ultima_sync', nowIso);
+          updateSyncStatusUI('online');
+          appState.isSyncing = false;
+          return true;
+        } else {
+          updateSyncStatusUI('offline');
+          appState.isSyncing = false;
+          return false;
+        }
+      } catch (e) {
+        console.warn('Falha na sincronização (mantendo dados locais):', e);
+        updateSyncStatusUI('offline');
+        appState.isSyncing = false;
+        return false;
+      }
+    }
+
+    // EXPORTAR BACKUP LOCAL (.JSON)
+    function exportarBackupJSON() {
+      const payload = buildSyncPayload();
+      const dateStr = new Date().toISOString().slice(0, 10);
+      const jsonStr = JSON.stringify(payload, null, 2);
+      const blob = new Blob([jsonStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `InstitutoMoove_Backup_${dateStr}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    // IMPORTAR BACKUP LOCAL (.JSON)
+    function importarBackupJSON(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || typeof data !== 'object' || (!Array.isArray(data.alunos) && !Array.isArray(data.professores) && !Array.isArray(data.avaliacoes))) {
+            alert('Formato de arquivo inválido. Selecione um arquivo de backup (.json) do Instituto Moove.');
+            return;
+          }
+
+          const impExc = data.excluidos || {};
+          appState.excluidos.alunos = Array.from(new Set([...(appState.excluidos.alunos || []), ...(impExc.alunos || [])]));
+          appState.excluidos.professores = Array.from(new Set([...(appState.excluidos.professores || []), ...(impExc.professores || [])]));
+          appState.excluidos.avaliacoes = Array.from(new Set([...(appState.excluidos.avaliacoes || []), ...(impExc.avaliacoes || [])]));
+
+          if (Array.isArray(data.alunos)) {
+            appState.alunos = mergeColecao(appState.alunos, data.alunos, appState.excluidos.alunos);
+          }
+          if (Array.isArray(data.professores)) {
+            appState.professores = mergeColecao(appState.professores, data.professores, appState.excluidos.professores);
+          }
+          if (Array.isArray(data.avaliacoes)) {
+            appState.avaliacoes = mergeColecao(appState.avaliacoes, data.avaliacoes, appState.excluidos.avaliacoes);
+          }
+
+          if (data.config && data.config.protocolo) {
+            appState.config.protocolo = { ...appState.config.protocolo, ...data.config.protocolo };
+          }
+
+          saveStorage(false);
+          renderAlunosTable(document.getElementById('input-busca-aluno')?.value || '');
+          renderProfessores();
+          renderHistorico();
+          renderEnvioSection();
+
+          const numAlunos = appState.alunos.length;
+          const numProfs = appState.professores.length;
+          const numAvals = appState.avaliacoes.length;
+
+          alert(`Backup importado: ${numAlunos} alunos, ${numProfs} professores, ${numAvals} avaliações.`);
+
+          if (appState.config.sheetsUrl) {
+            syncNow();
+          }
+        } catch (err) {
+          alert('Erro ao processar o arquivo de backup. Verifique a integridade do JSON.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // WEB AUDIO SINTETIZADOR (Sons para contagem 5s e zerar estágio)
+    let audioCtx = null;
+    function playBeep(freq = 600, duration = 0.15) {
+      const chk = document.getElementById('chk-som');
+      if (!chk || !chk.checked) return;
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {
+        // Áudio bloqueado ou indisponível silenciosamente
+      }
+    }
+
+    // CLASSIFICAÇÃO ACSM / COOPER (VO2 max)
+    function getClassificacaoCooper(vo2, idade, sexo) {
+      if (!vo2 || isNaN(vo2) || vo2 <= 0) return '—';
+      const isM = (sexo || 'Masculino') === 'Masculino';
+
+      if (isM) {
+        if (idade <= 29) {
+          if (vo2 < 33.0) return 'Muito Fraco';
+          if (vo2 <= 36.4) return 'Fraco';
+          if (vo2 <= 42.4) return 'Regular';
+          if (vo2 <= 46.4) return 'Bom';
+          if (vo2 <= 52.4) return 'Excelente';
+          return 'Superior';
+        } else if (idade <= 39) {
+          if (vo2 < 31.5) return 'Muito Fraco';
+          if (vo2 <= 35.4) return 'Fraco';
+          if (vo2 <= 40.9) return 'Regular';
+          if (vo2 <= 44.9) return 'Bom';
+          if (vo2 <= 49.4) return 'Excelente';
+          return 'Superior';
+        } else if (idade <= 49) {
+          if (vo2 < 30.2) return 'Muito Fraco';
+          if (vo2 <= 33.5) return 'Fraco';
+          if (vo2 <= 38.9) return 'Regular';
+          if (vo2 <= 43.7) return 'Bom';
+          if (vo2 <= 48.0) return 'Excelente';
+          return 'Superior';
+        } else if (idade <= 59) {
+          if (vo2 < 26.1) return 'Muito Fraco';
+          if (vo2 <= 30.9) return 'Fraco';
+          if (vo2 <= 35.7) return 'Regular';
+          if (vo2 <= 40.9) return 'Bom';
+          if (vo2 <= 45.3) return 'Excelente';
+          return 'Superior';
+        } else {
+          if (vo2 < 20.5) return 'Muito Fraco';
+          if (vo2 <= 26.0) return 'Fraco';
+          if (vo2 <= 32.2) return 'Regular';
+          if (vo2 <= 36.4) return 'Bom';
+          if (vo2 <= 44.2) return 'Excelente';
+          return 'Superior';
+        }
+      } else {
+        // Feminino
+        if (idade <= 29) {
+          if (vo2 < 23.6) return 'Muito Fraco';
+          if (vo2 <= 28.9) return 'Fraco';
+          if (vo2 <= 32.9) return 'Regular';
+          if (vo2 <= 36.9) return 'Bom';
+          if (vo2 <= 41.0) return 'Excelente';
+          return 'Superior';
+        } else if (idade <= 39) {
+          if (vo2 < 22.8) return 'Muito Fraco';
+          if (vo2 <= 26.9) return 'Fraco';
+          if (vo2 <= 31.4) return 'Regular';
+          if (vo2 <= 35.6) return 'Bom';
+          if (vo2 <= 40.0) return 'Excelente';
+          return 'Superior';
+        } else if (idade <= 49) {
+          if (vo2 < 21.0) return 'Muito Fraco';
+          if (vo2 <= 24.4) return 'Fraco';
+          if (vo2 <= 28.9) return 'Regular';
+          if (vo2 <= 32.8) return 'Bom';
+          if (vo2 <= 36.9) return 'Excelente';
+          return 'Superior';
+        } else if (idade <= 59) {
+          if (vo2 < 20.2) return 'Muito Fraco';
+          if (vo2 <= 22.7) return 'Fraco';
+          if (vo2 <= 26.9) return 'Regular';
+          if (vo2 <= 31.4) return 'Bom';
+          if (vo2 <= 35.7) return 'Excelente';
+          return 'Superior';
+        } else {
+          if (vo2 < 17.5) return 'Muito Fraco';
+          if (vo2 <= 20.1) return 'Fraco';
+          if (vo2 <= 24.4) return 'Regular';
+          if (vo2 <= 30.2) return 'Bom';
+          if (vo2 <= 31.4) return 'Excelente';
+          return 'Superior';
+        }
+      }
+    }
+
+    // FORMATAÇÃO DE TEMPO mm:ss
+    function formatTimeMMSS(sec) {
+      const m = Math.floor(sec / 60);
+      const s = sec % 60;
+      return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }
+
+    // MÁSCARA TELEFONE
+    function formatarTelefoneInput(val) {
+      if (!val) return '';
+      const digits = val.replace(/\D/g, '').slice(0, 11);
+      if (digits.length <= 2) return `(${digits}`;
+      if (digits.length <= 6) return `(${digits.slice(0,2)}) ${digits.slice(2)}`;
+      if (digits.length <= 10) return `(${digits.slice(0,2)}) ${digits.slice(2,6)}-${digits.slice(6)}`;
+      return `(${digits.slice(0,2)}) ${digits.slice(2,7)}-${digits.slice(7,11)}`;
+    }
+
+    // RENDERIZAR TABELA DE ALUNOS
+    function renderAlunosTable(filtro = '') {
+      const tbody = document.getElementById('tbody-alunos');
+      const termo = filtro.trim().toLowerCase();
+      const filtrados = appState.alunos.filter(a => a.nome.toLowerCase().includes(termo));
+
+      if (filtrados.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Nenhum aluno ativo encontrado.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtrados.map(a => {
+        const isSelected = a.id === appState.selectedAlunoId;
+        return `
+          <tr style="${isSelected ? 'background: #f0fdfa; font-weight: 600;' : ''}">
+            <td>
+              ${isSelected ? '⭐ ' : ''}<strong>${escapeHtml(a.nome)}</strong>
+            </td>
+            <td>${a.telefone ? escapeHtml(a.telefone) : '<span style="color:#94a3b8;">—</span>'}</td>
+            <td>${a.email ? escapeHtml(a.email) : '<span style="color:#94a3b8;">—</span>'}</td>
+            <td>${a.idade} anos</td>
+            <td>${escapeHtml(a.sexo)}</td>
+            <td>${a.peso.toFixed(1)} kg</td>
+            <td>${a.altura.toFixed(2)} m</td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button class="btn-act ${isSelected ? 'btn-primary' : 'btn-outline-primary'} btn-sm" onclick="selecionarAluno('${a.id}')">
+                ${isSelected ? '✓ Selecionado' : 'Selecionar para Teste'}
+              </button>
+              <button class="btn-act btn-outline btn-sm" onclick="editarAluno('${a.id}')">Editar</button>
+              <button class="btn-act btn-danger btn-sm" onclick="excluirAluno('${a.id}')">Excluir</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // SELECIONAR ALUNO
+    window.selecionarAluno = function(id) {
+      const aluno = appState.alunos.find(a => a.id === id);
+      if (!aluno) return;
+      appState.selectedAlunoId = id;
+      document.getElementById('display-atleta-nome').textContent = aluno.nome;
+      document.getElementById('display-atleta-detalhes').textContent = `(${aluno.idade} anos, ${aluno.sexo}, ${aluno.peso}kg, ${aluno.altura}m)`;
+      renderAlunosTable(document.getElementById('input-busca-aluno').value);
+      destacarTabelaNormativa(aluno);
+      atualizarCalculosDesfecho();
+    };
+
+    // DESTAQUE DA FAIXA ETÁRIA NA TABELA NORMATIVA
+    function destacarTabelaNormativa(aluno) {
+      document.querySelectorAll('.norm-table tr').forEach(r => r.classList.remove('norm-highlight'));
+      if (!aluno) return;
+      const targetTable = aluno.sexo === 'Feminino' ? document.getElementById('norm-table-f') : document.getElementById('norm-table-m');
+      let ageGroup = '60+';
+      if (aluno.idade <= 29) ageGroup = '20-29';
+      else if (aluno.idade <= 39) ageGroup = '30-39';
+      else if (aluno.idade <= 49) ageGroup = '40-49';
+      else if (aluno.idade <= 59) ageGroup = '50-59';
+
+      const row = targetTable.querySelector(`tr[data-age="${ageGroup}"]`);
+      if (row) row.classList.add('norm-highlight');
+    }
+
+    // CRUD DE ALUNO
+    window.editarAluno = function(id) {
+      const a = appState.alunos.find(x => x.id === id);
+      if (!a) return;
+      document.getElementById('aluno-id').value = a.id;
+      document.getElementById('aluno-nome').value = a.nome;
+      document.getElementById('aluno-telefone').value = a.telefone || '';
+      document.getElementById('aluno-email').value = a.email || '';
+      document.getElementById('aluno-idade').value = a.idade;
+      document.getElementById('aluno-sexo').value = a.sexo;
+      document.getElementById('aluno-peso').value = a.peso;
+      document.getElementById('aluno-altura').value = a.altura;
+      document.getElementById('modal-aluno-title').textContent = 'Editar Dados do Aluno';
+      document.getElementById('btn-submit-aluno').textContent = 'Salvar Alterações';
+      document.getElementById('modal-aluno').style.display = 'flex';
+    };
+
+    window.excluirAluno = function(id) {
+      if (!confirm('Deseja realmente remover este aluno? As avaliações anteriores permanecerão arquivadas.')) return;
+      registrarExclusao('alunos', id);
+      appState.alunos = appState.alunos.filter(a => a.id !== id);
+      if (appState.selectedAlunoId === id) {
+        appState.selectedAlunoId = null;
+        document.getElementById('display-atleta-nome').textContent = 'Nenhum atleta selecionado';
+        document.getElementById('display-atleta-detalhes').textContent = '';
+      }
+      saveStorage();
+      renderAlunosTable(document.getElementById('input-busca-aluno').value);
+      renderEnvioSection();
+    };
+
+    // PROFESSORES
+    function renderProfessores() {
+      const select = document.getElementById('select-avaliador');
+      const tbody = document.getElementById('tbody-professores');
+
+      // Dropdown cabeçalho
+      const ativos = appState.professores.filter(p => p.ativo);
+      select.innerHTML = ativos.map(p => `<option value="${escapeHtml(p.nome)}">${escapeHtml(p.nome)} (${escapeHtml(p.cref)})</option>`).join('');
+      if (!appState.selectedProfNome && ativos.length > 0) {
+        appState.selectedProfNome = ativos[0].nome;
+      }
+      select.value = appState.selectedProfNome;
+
+      // Tabela Gestão
+      tbody.innerHTML = appState.professores.map(p => `
+        <tr>
+          <td>
+            <input type="checkbox" ${p.ativo ? 'checked' : ''} onchange="toggleProfAtivo('${p.id}', this.checked)" title="Ativar/Desativar">
+          </td>
+          <td><strong>${escapeHtml(p.nome)}</strong></td>
+          <td>${escapeHtml(p.cref)}</td>
+          <td>${escapeHtml(p.tel || '—')}</td>
+          <td>${escapeHtml(p.email || '—')}</td>
+          <td style="text-align: right; white-space: nowrap;">
+            <button class="btn-act btn-outline btn-sm" onclick="editarProf('${p.id}')">Editar</button>
+            <button class="btn-act btn-danger btn-sm" onclick="excluirProf('${p.id}')">Excluir</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    window.toggleProfAtivo = function(id, val) {
+      const p = appState.professores.find(x => x.id === id);
+      if (p) {
+        p.ativo = val;
+        p.atualizadoEm = new Date().toISOString();
+        saveStorage();
+        renderProfessores();
+      }
+    };
+
+    window.editarProf = function(id) {
+      const p = appState.professores.find(x => x.id === id);
+      if (!p) return;
+      document.getElementById('prof-id').value = p.id;
+      document.getElementById('prof-nome').value = p.nome;
+      document.getElementById('prof-cref').value = p.cref;
+      document.getElementById('prof-tel').value = p.telefone || p.tel || '';
+      document.getElementById('prof-email').value = p.email || '';
+      document.getElementById('modal-prof-title').textContent = 'Editar Professor / Avaliador';
+      document.getElementById('modal-professor').style.display = 'flex';
+    };
+
+    window.excluirProf = function(id) {
+      if (appState.professores.length <= 1) {
+        alert('É necessário manter pelo menos um professor cadastrado.');
+        return;
+      }
+      if (!confirm('Deseja excluir este professor da equipe?')) return;
+      registrarExclusao('professores', id);
+      appState.professores = appState.professores.filter(p => p.id !== id);
+      saveStorage();
+      renderProfessores();
+    };
+
+    // QUADRO DE ESTÁGIOS
+    function renderEstagiosTable() {
+      const tbody = document.getElementById('tbody-estagios');
+      tbody.innerHTML = appState.estagiosDados.map(st => {
+        const isCurrent = st.estagio === appState.estagioAtualIndex;
+        let badgeClass = 'badge-pend';
+        if (st.status === 'Completo') badgeClass = 'badge-comp';
+        else if (st.status === 'Parcial') badgeClass = 'badge-part';
+
+        return `
+          <tr style="${isCurrent ? 'background: #f0fdfa; font-weight: 600;' : ''}">
+            <td><strong>Estágio ${st.estagio}</strong></td>
+            <td>${st.velocidade.toFixed(1)} km/h</td>
+            <td>${st.mets.toFixed(1)} METs</td>
+            <td>${st.fc ? st.fc + ' bpm' : '<span style="color: #94a3b8;">—</span>'}</td>
+            <td>${st.borg !== null ? st.borg : '<span style="color: #94a3b8;">—</span>'}</td>
+            <td>${st.talkTest ? escapeHtml(st.talkTest) : '<span style="color: #94a3b8;">—</span>'}</td>
+            <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${escapeHtml(st.obs || '—')}
+            </td>
+            <td><span class="badge-status ${badgeClass}">${st.status}</span></td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button class="btn-act btn-outline btn-sm" onclick="carregarParaEdicaoEstagio(${st.estagio})">Editar</button>
+              <button class="btn-act btn-danger btn-sm" onclick="limparEstagioDados(${st.estagio})">Limpar</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+
+      // Atualiza gráfico FC
+      drawFCChart();
+    }
+
+    window.carregarParaEdicaoEstagio = function(estagioNum) {
+      const st = appState.estagiosDados.find(s => s.estagio === estagioNum);
+      if (!st) return;
+      appState.estagioAtualIndex = estagioNum;
+      updateMonitorHeader();
+      document.getElementById('input-fc-estagio').value = st.fc || '';
+      document.getElementById('select-pse-borg').value = st.borg !== null ? st.borg : 0;
+      if (st.talkTest) document.getElementById('select-talk-test').value = st.talkTest;
+      document.getElementById('input-obs-estagio').value = st.obs || '';
+      document.getElementById('input-fc-estagio').focus();
+    };
+
+    window.limparEstagioDados = function(estagioNum) {
+      const st = appState.estagiosDados.find(s => s.estagio === estagioNum);
+      if (!st) return;
+      st.fc = null;
+      st.borg = null;
+      st.talkTest = '';
+      st.obs = '';
+      st.status = 'Pendente';
+      renderEstagiosTable();
+      atualizarCalculosDesfecho();
+    };
+
+    // MONITOR & CRONÔMETRO DO TESTE
+    function updateMonitorHeader() {
+      const cur = appState.estagiosDados.find(s => s.estagio === appState.estagioAtualIndex);
+      const velIni = (appState.config && appState.config.protocolo && appState.config.protocolo.velocidadeInicial !== undefined) ? appState.config.protocolo.velocidadeInicial : 8.0;
+      const vel = cur ? cur.velocidade : velIni;
+      const total = (appState.config && appState.config.protocolo && appState.config.protocolo.totalEstagios) || 12;
+      document.getElementById('monitor-estagio').textContent = `${appState.estagioAtualIndex} / ${total}`;
+      document.getElementById('monitor-velocidade').innerHTML = `${vel.toFixed(1)} <span style="font-size: 1rem; font-weight: 500;">km/h</span>`;
+      document.getElementById('registro-estagio-label').textContent = `Estágio ${appState.estagioAtualIndex} - ${vel.toFixed(1)} km/h`;
+    }
+
+    function toggleTimer() {
+      if (appState.testActive) {
+        // Pausar
+        clearInterval(appState.timerInterval);
+        appState.testActive = false;
+        document.getElementById('btn-timer-toggle').innerHTML = '▶ Continuar Cronômetro';
+      } else {
+        // Iniciar
+        if (!appState.selectedAlunoId) {
+          alert('Por favor, selecione ou cadastre um aluno antes de iniciar o teste.');
+          return;
+        }
+        appState.testActive = true;
+        document.getElementById('btn-timer-toggle').innerHTML = '⏸ Pausar Cronômetro';
+        
+        appState.timerInterval = setInterval(() => {
+          appState.tempoRestanteNoEstagio--;
+          appState.tempoTotalEfetivo++;
+
+          // Atualiza mostradores
+          document.getElementById('monitor-tempo').textContent = formatTimeMMSS(appState.tempoRestanteNoEstagio);
+          document.getElementById('monitor-tempo-total').textContent = formatTimeMMSS(appState.tempoTotalEfetivo);
+
+          // Bipes sonoros nos últimos 5 segundos (5, 4, 3, 2, 1)
+          if (appState.tempoRestanteNoEstagio <= 5 && appState.tempoRestanteNoEstagio > 0) {
+            playBeep(520, 0.12);
+          }
+
+          // Quando zera o tempo do estágio
+          if (appState.tempoRestanteNoEstagio <= 0) {
+            playBeep(880, 0.4); // Bipe de virada de estágio
+            const st = appState.estagiosDados.find(s => s.estagio === appState.estagioAtualIndex);
+            if (st && st.status === 'Pendente') {
+              st.status = 'Completo';
+            }
+            renderEstagiosTable();
+
+            const total = (appState.config && appState.config.protocolo && appState.config.protocolo.totalEstagios) || 12;
+            if (appState.estagioAtualIndex < total) {
+              proximoEstagio();
+            } else {
+              // Chegou ao fim dos estágios configurados
+              clearInterval(appState.timerInterval);
+              appState.testActive = false;
+              document.getElementById('btn-timer-toggle').innerHTML = '▶ Iniciar Cronômetro';
+              const curVel = appState.estagiosDados[appState.estagiosDados.length - 1]?.velocidade || 8.0;
+              alert(`Protocolo concluído! O avaliado atingiu o estágio máximo de ${total} (${curVel.toFixed(1)} km/h). Proceder para a recuperação.`);
+              encerrarTeste();
+            }
+          }
+        }, 1000);
+      }
+    }
+
+    function proximoEstagio() {
+      const total = (appState.config && appState.config.protocolo && appState.config.protocolo.totalEstagios) || 12;
+      const tempoPadrao = (appState.config && appState.config.protocolo && appState.config.protocolo.tempoEstagio) || 120;
+      if (appState.estagioAtualIndex < total) {
+        appState.estagioAtualIndex++;
+        appState.tempoRestanteNoEstagio = tempoPadrao;
+        document.getElementById('monitor-tempo').textContent = formatTimeMMSS(tempoPadrao);
+        updateMonitorHeader();
+        renderEstagiosTable();
+      } else {
+        alert(`Estágio ${total} já é o limite do protocolo progressivo configurado.`);
+      }
+    }
+
+    function encerrarTeste() {
+      if (appState.testActive) {
+        clearInterval(appState.timerInterval);
+        appState.testActive = false;
+        document.getElementById('btn-timer-toggle').innerHTML = '▶ Iniciar Cronômetro';
+      }
+
+      const tempoPadrao = (appState.config && appState.config.protocolo && appState.config.protocolo.tempoEstagio) || 120;
+      // Preenche status do estágio atual se não preenchido
+      const cur = appState.estagiosDados.find(s => s.estagio === appState.estagioAtualIndex);
+      if (cur && cur.status === 'Pendente') {
+        cur.status = appState.tempoRestanteNoEstagio < tempoPadrao ? 'Parcial' : 'Pendente';
+      }
+      renderEstagiosTable();
+      atualizarCalculosDesfecho();
+
+      // Scroll suave para a seção de desfecho
+      document.getElementById('section-desfecho').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // FORMULÁRIO DE DADOS DO ESTÁGIO
+    document.getElementById('form-estagio-dados').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fc = parseInt(document.getElementById('input-fc-estagio').value, 10);
+      const borg = parseInt(document.getElementById('select-pse-borg').value, 10);
+      const talk = document.getElementById('select-talk-test').value;
+      const obs = document.getElementById('input-obs-estagio').value;
+
+      if (isNaN(fc) || fc < 30 || fc > 250) {
+        alert('Por favor informe uma FC válida entre 30 e 250 bpm.');
+        return;
+      }
+
+      const st = appState.estagiosDados.find(s => s.estagio === appState.estagioAtualIndex);
+      if (st) {
+        st.fc = fc;
+        st.borg = borg;
+        st.talkTest = talk;
+        st.obs = obs;
+        st.status = 'Completo';
+      }
+
+      renderEstagiosTable();
+      atualizarCalculosDesfecho();
+
+      // Sugere valor para FC Pico do desfecho
+      const fcPicoInput = document.getElementById('input-fc-pico');
+      if (!fcPicoInput.value || parseInt(fcPicoInput.value) < fc) {
+        fcPicoInput.value = fc;
+        calcularQuedasRecuperacao();
+      }
+    });
+
+    // CÁLCULOS DO DESFECHO (ACSM)
+    function atualizarCalculosDesfecho() {
+      const velIni = (appState.config && appState.config.protocolo && appState.config.protocolo.velocidadeInicial !== undefined) ? appState.config.protocolo.velocidadeInicial : 8.0;
+      // Procura o maior estágio concluído ou em andamento com dados
+      const concluidos = appState.estagiosDados.filter(s => s.fc !== null || s.status === 'Completo' || s.status === 'Parcial');
+      let velFinal = velIni;
+      if (concluidos.length > 0) {
+        velFinal = concluidos[concluidos.length - 1].velocidade;
+      } else {
+        const cur = appState.estagiosDados.find(s => s.estagio === appState.estagioAtualIndex);
+        velFinal = cur ? cur.velocidade : velIni;
+      }
+
+      // Fórmula ACSM para corrida em esteira plana (0%):
+      // VO2 (mL/kg/min) = Velocidade (km/h) × 3,5
+      const vo2 = parseFloat((velFinal * 3.5).toFixed(1));
+      const mets = parseFloat((vo2 / 3.5).toFixed(1));
+
+      document.getElementById('res-vel-final').innerHTML = `${velFinal.toFixed(1)} <span style="font-size: 1rem;">km/h</span>`;
+      document.getElementById('res-vo2-max').innerHTML = `${vo2.toFixed(1)} <span style="font-size: 0.9rem;">mL/kg/min</span>`;
+      document.getElementById('res-mets-max').innerHTML = `${mets.toFixed(1)} <span style="font-size: 1rem;">METs</span>`;
+
+      // Classificação Cooper
+      const aluno = appState.alunos.find(a => a.id === appState.selectedAlunoId);
+      if (aluno) {
+        const classif = getClassificacaoCooper(vo2, aluno.idade, aluno.sexo);
+        document.getElementById('res-classificacao').textContent = classif;
+      } else {
+        document.getElementById('res-classificacao').textContent = '—';
+      }
+
+      calcularQuedasRecuperacao();
+    }
+
+    // PROTOCOLO DE RECUPERAÇÃO (2 MIN)
+    function toggleRecTimer() {
+      if (appState.recTimerInterval) {
+        clearInterval(appState.recTimerInterval);
+        appState.recTimerInterval = null;
+        document.getElementById('btn-rec-start').textContent = '▶ Continuar Recuperação';
+      } else {
+        document.getElementById('btn-rec-start').textContent = '⏸ Pausar Recuperação';
+        appState.recTimerInterval = setInterval(() => {
+          if (appState.recTempoRestante > 0) {
+            appState.recTempoRestante--;
+            document.getElementById('timer-rec-display').textContent = formatTimeMMSS(appState.recTempoRestante);
+
+            // Avisos aos 60s (tempo restante = 60s) e 120s (tempo restante = 0s)
+            if (appState.recTempoRestante === 60) {
+              playBeep(700, 0.3);
+              alert('Atenção: 60 segundos de recuperação! Registre a Frequência Cardíaca de 1 minuto.');
+            } else if (appState.recTempoRestante === 0) {
+              playBeep(880, 0.4);
+              clearInterval(appState.recTimerInterval);
+              appState.recTimerInterval = null;
+              document.getElementById('btn-rec-start').textContent = '▶ Iniciar Recuperação (2 min)';
+              alert('Recuperação de 2 minutos concluída! Registre a FC final de 120s.');
+            }
+          }
+        }, 1000);
+      }
+    }
+
+    function resetRecTimer() {
+      if (appState.recTimerInterval) {
+        clearInterval(appState.recTimerInterval);
+        appState.recTimerInterval = null;
+      }
+      appState.recTempoRestante = 120;
+      document.getElementById('timer-rec-display').textContent = '02:00';
+      document.getElementById('btn-rec-start').textContent = '▶ Iniciar Recuperação (2 min)';
+      document.getElementById('input-fc-pico').value = '';
+      document.getElementById('input-fc-60s').value = '';
+      document.getElementById('input-fc-120s').value = '';
+      calcularQuedasRecuperacao();
+    }
+
+    function calcularQuedasRecuperacao() {
+      const pico = parseInt(document.getElementById('input-fc-pico').value, 10);
+      const fc60 = parseInt(document.getElementById('input-fc-60s').value, 10);
+      const fc120 = parseInt(document.getElementById('input-fc-120s').value, 10);
+
+      const d1 = document.getElementById('display-queda-1min');
+      const d2 = document.getElementById('display-queda-2min');
+
+      if (!isNaN(pico) && !isNaN(fc60) && pico >= fc60) {
+        const q1 = pico - fc60;
+        let tag = 'Boa';
+        let color = '#15803d';
+        if (q1 < 6) { tag = 'Abaixo do Esperado'; color = '#b91c1c'; }
+        else if (q1 <= 11) { tag = 'Moderada'; color = '#b45309'; }
+        d1.innerHTML = `${q1} bpm <span style="font-size: 0.8rem; font-weight: 600; color: ${color};">(${tag})</span>`;
+      } else {
+        d1.textContent = '—';
+      }
+
+      if (!isNaN(pico) && !isNaN(fc120) && pico >= fc120) {
+        const q2 = pico - fc120;
+        d2.innerHTML = `${q2} bpm <span style="font-size: 0.8rem; font-weight: 600; color: #15803d;">(Recuperação 2 min)</span>`;
+      } else {
+        d2.textContent = '—';
+      }
+    }
+
+    document.getElementById('input-fc-pico').addEventListener('input', calcularQuedasRecuperacao);
+    document.getElementById('input-fc-60s').addEventListener('input', calcularQuedasRecuperacao);
+    document.getElementById('input-fc-120s').addEventListener('input', calcularQuedasRecuperacao);
+
+    // SALVAR AVALIAÇÃO NO HISTÓRICO
+    function salvarAvaliacaoFinal() {
+      if (!appState.selectedAlunoId) {
+        alert('Selecione um aluno para vincular esta avaliação.');
+        return;
+      }
+
+      const aluno = appState.alunos.find(a => a.id === appState.selectedAlunoId);
+      if (!aluno) return;
+
+      const velIni = (appState.config && appState.config.protocolo && appState.config.protocolo.velocidadeInicial !== undefined) ? appState.config.protocolo.velocidadeInicial : 8.0;
+      const concluidos = appState.estagiosDados.filter(s => s.fc !== null || s.status === 'Completo' || s.status === 'Parcial');
+      let velFinal = velIni;
+      if (concluidos.length > 0) velFinal = concluidos[concluidos.length - 1].velocidade;
+
+      const vo2 = parseFloat((velFinal * 3.5).toFixed(1));
+      const mets = parseFloat((vo2 / 3.5).toFixed(1));
+      const classif = getClassificacaoCooper(vo2, aluno.idade, aluno.sexo);
+
+      const pico = parseInt(document.getElementById('input-fc-pico').value, 10) || null;
+      const fc60 = parseInt(document.getElementById('input-fc-60s').value, 10) || null;
+      const fc120 = parseInt(document.getElementById('input-fc-120s').value, 10) || null;
+      const q1 = (pico && fc60) ? pico - fc60 : null;
+      const q2 = (pico && fc120) ? pico - fc120 : null;
+
+      // Captura snapshot dos estágios para o laudo
+      const snapshotEstagios = appState.estagiosDados
+        .filter(s => s.fc !== null || s.status === 'Completo' || s.status === 'Parcial')
+        .map(s => ({
+          estagio: s.estagio,
+          velocidade: s.velocidade,
+          mets: s.mets,
+          fc: s.fc,
+          borg: s.borg,
+          talkTest: s.talkTest,
+          obs: s.obs
+        }));
+
+      const nowIso = new Date().toISOString();
+      const novaAvaliacao = {
+        id: 'ev_' + Date.now(),
+        alunoId: aluno.id,
+        alunoNome: aluno.nome,
+        data: new Date().toLocaleDateString('pt-BR'),
+        timestamp: Date.now(),
+        velocidadeFinal: velFinal,
+        velFinal: velFinal,
+        vo2max: vo2,
+        vo2Max: vo2,
+        metsMax: mets,
+        duracaoTotal: appState.tempoTotalEfetivo,
+        duracaoSegundos: appState.tempoTotalEfetivo,
+        fcPico: pico,
+        fc60: fc60,
+        fc60s: fc60,
+        fc120: fc120,
+        fc120s: fc120,
+        queda1: q1,
+        queda1min: q1,
+        queda2: q2,
+        queda2min: q2,
+        classificacaoRecuperacao: classif,
+        classificacao: classif,
+        avaliador: document.getElementById('select-avaliador').value || 'Avaliador Responsável',
+        observacoesFinais: document.getElementById('input-obs-finais').value.trim(),
+        obs: document.getElementById('input-obs-finais').value.trim(),
+        estagios: snapshotEstagios.length > 0 ? snapshotEstagios : undefined,
+        estagiosSnapshot: snapshotEstagios.length > 0 ? snapshotEstagios : undefined,
+        configProtocolo: {
+          estagios: appState.config.protocolo.totalEstagios,
+          tempoEstagio: appState.config.protocolo.tempoEstagio,
+          incremento: appState.config.protocolo.incrementoVel,
+          velocidadeInicial: velIni
+        },
+        atualizadoEm: nowIso
+      };
+
+      appState.avaliacoes.unshift(novaAvaliacao);
+      saveStorage();
+      renderHistorico();
+      renderEnvioSection();
+      alert('Avaliação de VO₂ Máximo gravada com sucesso no histórico!');
+    }
+
+    // HISTÓRICO DE AVALIAÇÕES
+    function renderHistorico() {
+      const tbody = document.getElementById('tbody-historico');
+      if (appState.avaliacoes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Nenhuma avaliação registrada ainda.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = appState.avaliacoes.map(av => {
+        const velFinal = av.velocidadeFinal || av.velFinal || 8.0;
+        const vo2 = av.vo2max || av.vo2Max || 0.0;
+        const q1 = av.queda1 !== undefined ? av.queda1 : av.queda1min;
+        const q2 = av.queda2 !== undefined ? av.queda2 : av.queda2min;
+        const obs = av.observacoesFinais || av.obs || '';
+
+        return `
+          <tr>
+            <td><strong>${escapeHtml(av.alunoNome || 'Aluno')}</strong></td>
+            <td>${av.data || '—'}</td>
+            <td>${velFinal.toFixed(1)} km/h</td>
+            <td><strong>${vo2.toFixed(1)}</strong> <span style="font-size:0.75rem; color:var(--text-muted);">mL/kg/min</span></td>
+            <td>${(av.metsMax || 0).toFixed(1)}</td>
+            <td>${q1 !== null && q1 !== undefined ? q1 + ' bpm' : '—'}</td>
+            <td>${q2 !== null && q2 !== undefined ? q2 + ' bpm' : '—'}</td>
+            <td><small>${escapeHtml(av.avaliador || '—')}</small></td>
+            <td style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${escapeHtml(obs || '—')}
+            </td>
+            <td style="text-align: right; white-space: nowrap;">
+              <button class="btn-act btn-outline btn-sm" onclick="abrirRelatorioPorAvaliacao('${av.id}')">Ver Laudo</button>
+              <button class="btn-act btn-danger btn-sm" onclick="excluirAvaliacao('${av.id}')">Excluir</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    window.excluirAvaliacao = function(id) {
+      if (!confirm('Deseja realmente remover esta avaliação do histórico?')) return;
+      registrarExclusao('avaliacoes', id);
+      appState.avaliacoes = appState.avaliacoes.filter(x => x.id !== id);
+      saveStorage();
+      renderHistorico();
+      renderEnvioSection();
+    };
+
+    // --- SEÇÃO ENVIAR RESULTADOS AO ALUNO ---
+    function renderEnvioSection() {
+      const selectAluno = document.getElementById('envio-select-aluno');
+      if (!selectAluno) return;
+
+      if (appState.alunos.length === 0) {
+        selectAluno.innerHTML = '<option value="">Nenhum aluno cadastrado</option>';
+        document.getElementById('envio-select-avaliacao').innerHTML = '<option value="">Nenhuma avaliação</option>';
+        atualizarPreviaEnvio(null, null);
+        return;
+      }
+
+      // Preenche dropdown de alunos
+      selectAluno.innerHTML = appState.alunos.map(a => `
+        <option value="${a.id}" ${a.id === appState.selectedAlunoId ? 'selected' : ''}>
+          ${escapeHtml(a.nome)} (${a.idade} anos)
+        </option>
+      `).join('');
+
+      atualizarDropdownAvaliacoesEnvio();
+    }
+
+    function atualizarDropdownAvaliacoesEnvio() {
+      const selectAluno = document.getElementById('envio-select-aluno');
+      const selectAval = document.getElementById('envio-select-avaliacao');
+      if (!selectAluno || !selectAval) return;
+
+      const alunoId = selectAluno.value;
+      const aluno = appState.alunos.find(a => a.id === alunoId);
+      if (!aluno) {
+        selectAval.innerHTML = '<option value="">Selecione um aluno primeiro</option>';
+        atualizarPreviaEnvio(null, null);
+        return;
+      }
+
+      // Avaliações do aluno ordenadas da mais recente para a mais antiga
+      const avs = appState.avaliacoes
+        .filter(av => av.alunoId === alunoId)
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      if (avs.length === 0) {
+        selectAval.innerHTML = '<option value="">Nenhuma avaliação registrada para este aluno</option>';
+        atualizarPreviaEnvio(aluno, null);
+        return;
+      }
+
+      selectAval.innerHTML = avs.map(av => `
+        <option value="${av.id}">
+          ${av.data} — VO₂ Máx ${av.vo2Max.toFixed(1)} mL/kg/min
+        </option>
+      `).join('');
+
+      atualizarPreviaEnvio(aluno, avs[0]);
+    }
+
+    function atualizarPreviaEnvio(aluno, avaliacao) {
+      const prevAluno = document.getElementById('prev-aluno-nome');
+      const prevContato = document.getElementById('prev-aluno-contato');
+      const prevData = document.getElementById('prev-data-teste');
+      const prevVel = document.getElementById('prev-vel-final');
+      const prevVO2 = document.getElementById('prev-vo2-max');
+      const prevMets = document.getElementById('prev-mets-max');
+      const prevClass = document.getElementById('prev-classificacao');
+      const prevQ1 = document.getElementById('prev-queda-1min');
+      const prevQ2 = document.getElementById('prev-queda-2min');
+      const prevAv = document.getElementById('prev-avaliador');
+      const badge = document.getElementById('badge-envio-status');
+
+      if (!aluno || !avaliacao) {
+        prevAluno.textContent = aluno ? aluno.nome : '—';
+        prevContato.textContent = aluno ? (aluno.telefone || aluno.email || 'Sem contato') : '—';
+        prevData.textContent = '—';
+        prevVel.innerHTML = '0.0 <span style="font-size:0.8rem;">km/h</span>';
+        prevVO2.innerHTML = '0.0 <span style="font-size:0.8rem;">mL/kg/min</span>';
+        prevMets.textContent = '0.0';
+        prevClass.textContent = '—';
+        prevQ1.textContent = '—';
+        prevQ2.textContent = '—';
+        prevAv.textContent = '—';
+        if (badge) {
+          badge.textContent = 'Nenhuma avaliação selecionada';
+          badge.className = 'badge-status badge-pend';
+        }
+        return;
+      }
+
+      prevAluno.textContent = aluno.nome;
+      const partesContato = [];
+      if (aluno.telefone) partesContato.push(aluno.telefone);
+      if (aluno.email) partesContato.push(aluno.email);
+      prevContato.textContent = partesContato.length > 0 ? partesContato.join(' | ') : 'Sem telefone / e-mail';
+
+      prevData.textContent = avaliacao.data;
+      prevVel.innerHTML = `${avaliacao.velFinal.toFixed(1)} <span style="font-size:0.8rem;">km/h</span>`;
+      prevVO2.innerHTML = `${avaliacao.vo2Max.toFixed(1)} <span style="font-size:0.8rem;">mL/kg/min</span>`;
+      prevMets.textContent = avaliacao.metsMax.toFixed(1);
+      prevClass.textContent = avaliacao.classificacao || '—';
+      prevQ1.textContent = avaliacao.queda1min !== null ? `${avaliacao.queda1min} bpm` : '—';
+      prevQ2.textContent = avaliacao.queda2min !== null ? `${avaliacao.queda2min} bpm` : '—';
+      prevAv.textContent = avaliacao.avaliador || '—';
+
+      if (badge) {
+        badge.textContent = 'Avaliação pronta para envio';
+        badge.className = 'badge-status badge-comp';
+      }
+    }
+
+    // DISPARO WHATSAPP
+    function enviarWhatsAppResultado() {
+      const selectAluno = document.getElementById('envio-select-aluno');
+      const selectAval = document.getElementById('envio-select-avaliacao');
+      const aluno = appState.alunos.find(a => a.id === selectAluno.value);
+      const avaliacao = appState.avaliacoes.find(av => av.id === selectAval.value);
+
+      if (!aluno || !avaliacao) {
+        alert('Selecione um aluno e uma avaliação válida para enviar.');
+        return;
+      }
+
+      if (!aluno.telefone || !aluno.telefone.trim()) {
+        if (confirm(`O aluno ${aluno.nome} não possui telefone/WhatsApp cadastrado.\n\nDeseja cadastrar o telefone agora?`)) {
+          editarAluno(aluno.id);
+        }
+        return;
+      }
+
+      // Trata número: apenas dígitos; se não começar com 55 e tiver 10 ou 11 dígitos, adiciona 55
+      let cleanTel = aluno.telefone.replace(/\D/g, '');
+      if (cleanTel.length === 10 || cleanTel.length === 11) {
+        cleanTel = '55' + cleanTel;
+      }
+
+      const q1Texto = avaliacao.queda1min !== null ? `${avaliacao.queda1min} bpm` : 'Não aferida';
+      const q2Texto = avaliacao.queda2min !== null ? `${avaliacao.queda2min} bpm` : 'Não aferida';
+      const duracaoTexto = avaliacao.duracaoSegundos ? formatTimeMMSS(avaliacao.duracaoSegundos) : '—';
+
+      const msg = 
+`Olá, *${aluno.nome}*! 🏃💨
+Aqui está o resultado oficial da sua avaliação física no *Instituto Moove*:
+
+📊 *LAUDO DO TESTE DE VO₂ MÁXIMO*
+• Data da Avaliação: ${avaliacao.data}
+• Velocidade Final Atingida: ${avaliacao.velFinal.toFixed(1)} km/h
+• VO₂ Máximo Estimado: *${avaliacao.vo2Max.toFixed(1)} mL/kg/min*
+• METs Máximo: ${avaliacao.metsMax.toFixed(1)} METs
+• Classificação (ACSM/Cooper): *${avaliacao.classificacao || '—'}*
+• Duração do Teste: ${duracaoTexto}
+
+❤️ *Recuperação Cardíaca Pós-Esforço (2 min):*
+• Queda da FC aos 60s (1 min): ${q1Texto}
+• Queda da FC aos 120s (2 min): ${q2Texto}
+
+👨‍🏫 *Avaliador Responsável:* ${avaliacao.avaliador}
+${avaliacao.obs ? `\n📝 *Parecer do Avaliador:* "${avaliacao.obs}"\n` : ''}
+Parabéns pela dedicação e pelo desempenho no teste! Continuamos juntos na evolução da sua saúde e performance.
+
+*Instituto Moove* — Fisiologia do Exercício & Avaliação Física`;
+
+      const url = `https://wa.me/${cleanTel}?text=${encodeURIComponent(msg)}`;
+      window.open(url, '_blank');
+    }
+
+    // DISPARO E-MAIL
+    function enviarEmailResultado() {
+      const selectAluno = document.getElementById('envio-select-aluno');
+      const selectAval = document.getElementById('envio-select-avaliacao');
+      const aluno = appState.alunos.find(a => a.id === selectAluno.value);
+      const avaliacao = appState.avaliacoes.find(av => av.id === selectAval.value);
+
+      if (!aluno || !avaliacao) {
+        alert('Selecione um aluno e uma avaliação válida para enviar.');
+        return;
+      }
+
+      if (!aluno.email || !aluno.email.trim()) {
+        if (confirm(`O aluno ${aluno.nome} não possui e-mail cadastrado.\n\nDeseja cadastrar o e-mail agora?`)) {
+          editarAluno(aluno.id);
+        }
+        return;
+      }
+
+      const assunto = 'Resultado do Teste de VO₂ Máximo — Instituto Moove';
+      const q1Texto = avaliacao.queda1min !== null ? `${avaliacao.queda1min} bpm` : 'Não aferida';
+      const q2Texto = avaliacao.queda2min !== null ? `${avaliacao.queda2min} bpm` : 'Não aferida';
+      const duracaoTexto = avaliacao.duracaoSegundos ? formatTimeMMSS(avaliacao.duracaoSegundos) : '—';
+
+      const corpo = 
+`Olá, ${aluno.nome},
+
+Segue abaixo o laudo consolidado da sua Avaliação Cardiorrespiratória e Teste de VO₂ Máximo realizada no Instituto Moove:
+
+==================================================
+INSTITUTO MOOVE — LAUDO DE AVALIAÇÃO FISIOLÓGICA
+==================================================
+
+DADOS DO AVALIADO:
+• Nome: ${aluno.nome}
+• Idade: ${aluno.idade} anos | Sexo: ${aluno.sexo}
+• Peso: ${aluno.peso.toFixed(1)} kg | Altura: ${aluno.altura.toFixed(2)} m
+
+DESFECHO MÁXIMO DO TESTE:
+• Data do Teste: ${avaliacao.data}
+• Velocidade Final: ${avaliacao.velFinal.toFixed(1)} km/h
+• VO₂ Máximo Estimado: ${avaliacao.vo2Max.toFixed(1)} mL/kg/min
+• METs Máximo: ${avaliacao.metsMax.toFixed(1)} METs
+• Duração do Teste: ${duracaoTexto}
+• Classificação de Aptidão (Cooper/ACSM): ${avaliacao.classificacao || '—'}
+
+RECUPERAÇÃO CARDÍACA (2 minutos ativos a 4,5 km/h):
+• FC Pico: ${avaliacao.fcPico ? avaliacao.fcPico + ' bpm' : '—'}
+• FC 60s: ${avaliacao.fc60s ? avaliacao.fc60s + ' bpm' : '—'} (Queda: ${q1Texto})
+• FC 120s: ${avaliacao.fc120s ? avaliacao.fc120s + ' bpm' : '—'} (Queda: ${q2Texto})
+
+PARECER DO FISIOLOGISTA / AVALIADOR:
+${avaliacao.obs ? avaliacao.obs : 'Avaliado concluiu o protocolo com excelente resposta cronotrópica e parâmetros estáveis.'}
+
+Avaliador Responsável: ${avaliacao.avaliador}
+
+Atenciosamente,
+Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
+
+      const mailtoUrl = `mailto:${encodeURIComponent(aluno.email)}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+      window.location.href = mailtoUrl;
+    }
+
+    // GERAÇÃO / LAUDO INDIVIDUAL PARA IMPRESSÃO E PDF
+    function abrirLaudoIndividualParaPDF() {
+      const selectAluno = document.getElementById('envio-select-aluno');
+      const selectAval = document.getElementById('envio-select-avaliacao');
+      const aluno = appState.alunos.find(a => a.id === selectAluno.value);
+      const avaliacao = appState.avaliacoes.find(av => av.id === selectAval.value);
+
+      if (!aluno || !avaliacao) {
+        alert('Selecione um aluno e uma avaliação válida para gerar o laudo.');
+        return;
+      }
+
+      // Preenche cabeçalho e dados do aluno
+      document.getElementById('ind-data-teste').textContent = avaliacao.data;
+      document.getElementById('ind-aluno-nome').textContent = aluno.nome;
+      document.getElementById('ind-aluno-perfil').textContent = `${aluno.idade} anos | ${aluno.sexo}`;
+      document.getElementById('ind-aluno-biometria').textContent = `${aluno.peso.toFixed(1)} kg | ${aluno.altura.toFixed(2)} m`;
+      
+      const contatos = [];
+      if (aluno.telefone) contatos.push(`WhatsApp: ${aluno.telefone}`);
+      if (aluno.email) contatos.push(aluno.email);
+      document.getElementById('ind-aluno-contato').textContent = contatos.length > 0 ? contatos.join(' • ') : 'Contato não informado';
+
+      // Resultados
+      document.getElementById('ind-res-vel').textContent = `${avaliacao.velFinal.toFixed(1)} km/h`;
+      document.getElementById('ind-res-vo2').textContent = `${avaliacao.vo2Max.toFixed(1)} mL/kg/min`;
+      document.getElementById('ind-res-mets').textContent = `${avaliacao.metsMax.toFixed(1)} METs`;
+      document.getElementById('ind-res-duracao').textContent = avaliacao.duracaoSegundos ? formatTimeMMSS(avaliacao.duracaoSegundos) : '—';
+      document.getElementById('ind-res-classif').textContent = avaliacao.classificacao || '—';
+
+      // Tabela de Estágios
+      let estagios = avaliacao.estagiosSnapshot;
+      if (!estagios || estagios.length === 0) {
+        // Reconstrói estágios aproximados baseado na velFinal se não houver snapshot gravado
+        estagios = [];
+        const inc = (appState.config && appState.config.protocolo && appState.config.protocolo.incrementoVel) || 0.5;
+        let v = 8.0;
+        let stNum = 1;
+        while (v <= avaliacao.velFinal + 0.01 && stNum <= 15) {
+          estagios.push({
+            estagio: stNum,
+            velocidade: parseFloat(v.toFixed(1)),
+            mets: parseFloat((v * 3.5 / 3.5).toFixed(1)),
+            fc: stNum === 1 ? 120 : (v === avaliacao.velFinal && avaliacao.fcPico ? avaliacao.fcPico : Math.round(120 + (stNum - 1) * 9)),
+            borg: Math.min(10, Math.round(2 + (stNum - 1) * 1.1)),
+            talkTest: stNum < 4 ? 'Fala normal' : (v === avaliacao.velFinal ? 'Incapaz de falar continuamente' : 'Fala entrecortada'),
+            obs: v === avaliacao.velFinal ? 'Estágio de pico concluído' : 'Estabilidade funcional'
+          });
+          v += inc;
+          stNum++;
+        }
+      }
+
+      const tbody = document.getElementById('ind-tbody-estagios');
+      tbody.innerHTML = estagios.map(st => `
+        <tr>
+          <td><strong>Estágio ${st.estagio}</strong></td>
+          <td>${st.velocidade.toFixed(1)} km/h</td>
+          <td>${st.mets.toFixed(1)}</td>
+          <td>${st.fc ? st.fc + ' bpm' : '—'}</td>
+          <td>${st.borg !== null && st.borg !== undefined ? st.borg : '—'}</td>
+          <td>${escapeHtml(st.talkTest || '—')}</td>
+          <td>${escapeHtml(st.obs || '—')}</td>
+        </tr>
+      `).join('');
+
+      // Recuperação
+      document.getElementById('ind-rec-pico').textContent = avaliacao.fcPico ? `${avaliacao.fcPico} bpm` : '—';
+      document.getElementById('ind-rec-fc60').textContent = avaliacao.fc60s ? `${avaliacao.fc60s} bpm` : '—';
+      document.getElementById('ind-rec-queda1').textContent = avaliacao.queda1min !== null ? `${avaliacao.queda1min} bpm (${avaliacao.queda1min >= 12 ? 'Boa' : 'Moderada'})` : '—';
+      document.getElementById('ind-rec-fc120').textContent = avaliacao.fc120s ? `${avaliacao.fc120s} bpm` : '—';
+      document.getElementById('ind-rec-queda2').textContent = avaliacao.queda2min !== null ? `${avaliacao.queda2min} bpm (Adequada)` : '—';
+
+      // Observações Finais & Avaliador
+      document.getElementById('ind-obs-finais').textContent = avaliacao.obs || 'Avaliado realizou o teste com boa tolerância cardiorrespiratória ao esforço progressivo em esteira, sem intercorrências hemodinâmicas relatadas.';
+      document.getElementById('ind-rodape-avaliador').textContent = avaliacao.avaliador || 'Prof. Responsável';
+      document.getElementById('ind-assinatura-avaliador').textContent = avaliacao.avaliador || 'Prof. Responsável';
+
+      // Define título da página para que o arquivo PDF salvo via impressão tenha o nome exigido
+      const dataFormatada = avaliacao.data.replace(/[\/\\]/g, '-');
+      const nomeAlunoFormatado = aluno.nome.replace(/\s+/g, '_');
+      const docTitleOriginal = document.title;
+      document.title = `Resultado_VO2_${nomeAlunoFormatado}_${dataFormatada}`;
+
+      document.getElementById('modal-laudo-individual').style.display = 'flex';
+
+      // Restaura o título após fechar/imprimir
+      window.addEventListener('afterprint', () => {
+        document.title = docTitleOriginal;
+      }, { once: true });
+    }
+
+    window.abrirRelatorioPorAvaliacao = function(id) {
+      const av = appState.avaliacoes.find(x => x.id === id);
+      if (!av) return;
+      gerarRelatorioAluno(av.alunoId);
+    };
+
+    // 9. COMPARATIVO DA FC POR ESTÁGIOS (SVG Chart Direto)
+    function drawFCChart() {
+      const svg = document.getElementById('svg-fc-chart');
+      if (!svg) return;
+
+      const data = appState.estagiosDados.map(s => ({
+        label: `E${s.estagio}`,
+        vel: `${s.velocidade.toFixed(1)}k`,
+        fc: s.fc || 0
+      }));
+
+      const maxFC = 220;
+      const minFC = 40;
+      const width = 800;
+      const height = 220;
+      const padLeft = 45;
+      const padRight = 30;
+      const padTop = 20;
+      const padBottom = 35;
+      const chartW = width - padLeft - padRight;
+      const chartH = height - padTop - padBottom;
+
+      let markup = '';
+
+      // Linhas de Grade e Eixo Y
+      const gridSteps = [60, 100, 140, 180, 200];
+      gridSteps.forEach(val => {
+        const y = padTop + chartH - ((val - minFC) / (maxFC - minFC)) * chartH;
+        markup += `
+          <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3,3" />
+          <text x="${padLeft - 8}" y="${y + 4}" fill="#94a3b8" font-size="11" font-family="sans-serif" text-anchor="end">${val}</text>
+        `;
+      });
+
+      // Eixo X e Barras / Pontos
+      const stepX = chartW / data.length;
+      const points = [];
+
+      data.forEach((d, i) => {
+        const x = padLeft + i * stepX + stepX / 2;
+        // Rótulo Estágio e Velocidade
+        markup += `
+          <text x="${x}" y="${height - 18}" fill="#64748b" font-size="11" font-weight="600" font-family="sans-serif" text-anchor="middle">${d.label}</text>
+          <text x="${x}" y="${height - 5}" fill="#94a3b8" font-size="9" font-family="sans-serif" text-anchor="middle">${d.vel}</text>
+        `;
+
+        if (d.fc > 0) {
+          const y = padTop + chartH - ((d.fc - minFC) / (maxFC - minFC)) * chartH;
+          points.push({ x, y, fc: d.fc });
+        }
+      });
+
+      // Linha conectando os estágios com FC registrada
+      if (points.length > 0) {
+        if (points.length > 1) {
+          const pathD = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+          markup += `<path d="${pathD}" fill="none" stroke="#0f766e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />`;
+        }
+
+        // Círculos e Rótulos de FC
+        points.forEach(p => {
+          markup += `
+            <circle cx="${p.x}" cy="${p.y}" r="5" fill="#ffffff" stroke="#0f766e" stroke-width="3" />
+            <rect x="${p.x - 18}" y="${p.y - 24}" width="36" height="18" rx="4" fill="#0f766e" />
+            <text x="${p.x}" y="${p.y - 12}" fill="#ffffff" font-size="10" font-weight="700" font-family="sans-serif" text-anchor="middle">${p.fc}</text>
+          `;
+        });
+      } else {
+        markup += `
+          <text x="${width / 2}" y="${height / 2}" fill="#94a3b8" font-size="13" font-family="sans-serif" text-anchor="middle">
+            Insira os dados de FC nos estágios acima para visualizar a curva cronotrópica em tempo real.
+          </text>
+        `;
+      }
+
+      svg.innerHTML = markup;
+    }
+
+    // 13. RELATÓRIO DE EVOLUÇÃO
+    function gerarRelatorioAluno(alunoId) {
+      const targetId = alunoId || appState.selectedAlunoId;
+      if (!targetId) {
+        alert('Por favor, selecione um aluno para visualizar o relatório de evolução.');
+        return;
+      }
+
+      const aluno = appState.alunos.find(a => a.id === targetId);
+      if (!aluno) return;
+
+      const testes = appState.avaliacoes.filter(av => av.alunoId === targetId).sort((a,b) => a.timestamp - b.timestamp);
+
+      // Preenche cabeçalho
+      document.getElementById('rel-data-emissao').textContent = new Date().toLocaleDateString('pt-BR');
+      document.getElementById('rel-aluno-nome').textContent = aluno.nome;
+      document.getElementById('rel-aluno-perfil').textContent = `${aluno.idade} anos | Sexo ${aluno.sexo}`;
+      document.getElementById('rel-aluno-biometria').textContent = `${aluno.peso.toFixed(1)} kg | ${aluno.altura.toFixed(2)} m`;
+      document.getElementById('rel-aluno-total-testes').textContent = testes.length;
+      document.getElementById('rel-assinatura-avaliador').textContent = document.getElementById('select-avaliador').value || 'Prof. Responsável';
+
+      // Tabela de Testes do Aluno
+      const tbody = document.getElementById('tbody-relatorio-testes');
+      if (testes.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Nenhum teste registrado para este aluno ainda.</td></tr>`;
+      } else {
+        tbody.innerHTML = testes.map(t => `
+          <tr>
+            <td><strong>${t.data}</strong></td>
+            <td>${t.velFinal.toFixed(1)} km/h</td>
+            <td><strong style="color: var(--accent);">${t.vo2Max.toFixed(1)}</strong> mL/kg/min</td>
+            <td><span class="badge-status badge-comp">${escapeHtml(t.classificacao || '—')}</span></td>
+            <td>${t.queda1min !== null ? t.queda1min + ' bpm' : '—'}</td>
+            <td>${escapeHtml(t.avaliador)}</td>
+          </tr>
+        `).join('');
+      }
+
+      // Gráfico de Evolução do VO2 Máximo
+      drawEvolucaoVO2Chart(testes);
+
+      document.getElementById('modal-relatorio').style.display = 'flex';
+    }
+
+    function drawEvolucaoVO2Chart(testes) {
+      const svg = document.getElementById('svg-relatorio-evolucao');
+      if (!svg) return;
+
+      if (!testes || testes.length === 0) {
+        svg.innerHTML = `
+          <text x="350" y="90" fill="#94a3b8" font-size="13" font-family="sans-serif" text-anchor="middle">
+            Dados insuficientes para traçar curva histórica (mínimo de 1 avaliação necessária).
+          </text>
+        `;
+        return;
+      }
+
+      const width = 700;
+      const height = 180;
+      const padLeft = 45;
+      const padRight = 35;
+      const padTop = 20;
+      const padBottom = 30;
+      const chartW = width - padLeft - padRight;
+      const chartH = height - padTop - padBottom;
+
+      const vo2Vals = testes.map(t => t.vo2Max);
+      const minVO2 = Math.max(10, Math.floor(Math.min(...vo2Vals) - 5));
+      const maxVO2 = Math.ceil(Math.max(...vo2Vals) + 5);
+
+      let markup = '';
+
+      // Linhas horizontais
+      const steps = 3;
+      for (let i = 0; i <= steps; i++) {
+        const val = minVO2 + (i / steps) * (maxVO2 - minVO2);
+        const y = padTop + chartH - (i / steps) * chartH;
+        markup += `
+          <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2,2" />
+          <text x="${padLeft - 8}" y="${y + 4}" fill="#94a3b8" font-size="10" font-family="sans-serif" text-anchor="end">${val.toFixed(0)}</text>
+        `;
+      }
+
+      // Pontos e Conexão
+      const stepX = testes.length > 1 ? chartW / (testes.length - 1) : chartW / 2;
+      const points = testes.map((t, idx) => {
+        const x = testes.length > 1 ? padLeft + idx * stepX : padLeft + chartW / 2;
+        const y = padTop + chartH - ((t.vo2Max - minVO2) / (maxVO2 - minVO2)) * chartH;
+        return { x, y, vo2: t.vo2Max, date: t.data };
+      });
+
+      if (points.length > 1) {
+        const pathD = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+        markup += `<path d="${pathD}" fill="none" stroke="#0f766e" stroke-width="3" stroke-linecap="round" />`;
+      }
+
+      points.forEach(p => {
+        markup += `
+          <circle cx="${p.x}" cy="${p.y}" r="6" fill="#0f766e" stroke="#ffffff" stroke-width="2" />
+          <rect x="${p.x - 22}" y="${p.y - 24}" width="44" height="18" rx="4" fill="#0f766e" />
+          <text x="${p.x}" y="${p.y - 12}" fill="#ffffff" font-size="10" font-weight="700" font-family="sans-serif" text-anchor="middle">${p.vo2.toFixed(1)}</text>
+          <text x="${p.x}" y="${height - 8}" fill="#64748b" font-size="10" font-weight="600" font-family="sans-serif" text-anchor="middle">${p.date}</text>
+        `;
+      });
+
+      svg.innerHTML = markup;
+    }
+
+    // UTILITÁRIO ESCAPE HTML
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // INICIALIZAÇÃO DE EVENTOS
+    document.addEventListener('DOMContentLoaded', () => {
+      loadStorage();
+      appState.tempoRestanteNoEstagio = appState.config.protocolo.tempoEstagio;
+      appState.estagiosDados = buildEmptyEstagios();
+
+      // Inicializa campos de configuração do protocolo
+      const cfgVelIniInput = document.getElementById('cfg-velocidade-inicial');
+      const cfgEstagiosInput = document.getElementById('cfg-total-estagios');
+      const cfgTempoInput = document.getElementById('cfg-tempo-estagio');
+      const cfgIncInput = document.getElementById('cfg-incremento-vel');
+      if (cfgVelIniInput) cfgVelIniInput.value = (appState.config.protocolo.velocidadeInicial !== undefined ? appState.config.protocolo.velocidadeInicial : 8.0).toFixed(1);
+      if (cfgEstagiosInput) cfgEstagiosInput.value = appState.config.protocolo.totalEstagios;
+      if (cfgTempoInput) cfgTempoInput.value = appState.config.protocolo.tempoEstagio;
+      if (cfgIncInput) cfgIncInput.value = appState.config.protocolo.incrementoVel.toFixed(1);
+
+      updateProtocolBadge();
+      document.getElementById('monitor-tempo').textContent = formatTimeMMSS(appState.tempoRestanteNoEstagio);
+
+      renderProfessores();
+      renderAlunosTable();
+      renderEstagiosTable();
+      renderHistorico();
+      updateMonitorHeader();
+      renderEnvioSection();
+
+      // Listeners da Seção de Envio
+      const selectEnvioAluno = document.getElementById('envio-select-aluno');
+      if (selectEnvioAluno) {
+        selectEnvioAluno.addEventListener('change', atualizarDropdownAvaliacoesEnvio);
+      }
+      const selectEnvioAval = document.getElementById('envio-select-avaliacao');
+      if (selectEnvioAval) {
+        selectEnvioAval.addEventListener('change', () => {
+          const a = appState.alunos.find(x => x.id === selectEnvioAluno.value);
+          const av = appState.avaliacoes.find(x => x.id === selectEnvioAval.value);
+          atualizarPreviaEnvio(a, av);
+        });
+      }
+
+      document.getElementById('btn-gerar-pdf-envio').addEventListener('click', abrirLaudoIndividualParaPDF);
+      document.getElementById('btn-baixar-pdf-envio').addEventListener('click', abrirLaudoIndividualParaPDF);
+      document.getElementById('btn-enviar-whatsapp').addEventListener('click', enviarWhatsAppResultado);
+      document.getElementById('btn-enviar-email').addEventListener('click', enviarEmailResultado);
+
+      document.getElementById('btn-close-laudo-ind').addEventListener('click', () => {
+        document.getElementById('modal-laudo-individual').style.display = 'none';
+      });
+      document.getElementById('btn-imprimir-laudo-ind').addEventListener('click', () => {
+        window.print();
+      });
+
+      // Máscara do telefone de aluno
+      const inputTelAluno = document.getElementById('aluno-telefone');
+      if (inputTelAluno) {
+        inputTelAluno.addEventListener('input', (e) => {
+          e.target.value = formatarTelefoneInput(e.target.value);
+        });
+      }
+
+      // Listeners para a configuração do protocolo (botão e alteração de campos)
+      const formConfig = document.getElementById('form-config-protocolo');
+      if (formConfig) {
+        formConfig.addEventListener('submit', (e) => {
+          e.preventDefault();
+          applyProtocolConfig(true);
+        });
+      }
+      [cfgVelIniInput, cfgEstagiosInput, cfgTempoInput, cfgIncInput].forEach(inp => {
+        if (inp) {
+          inp.addEventListener('change', () => applyProtocolConfig(false));
+        }
+      });
+
+      // Sincronização inicial e agendamentos
+      if (appState.config.sheetsUrl && appState.config.sheetsUrl.startsWith('http')) {
+        syncNow();
+      } else {
+        updateSyncStatusUI('offline');
+      }
+
+      // Sincronização automática a cada 30 segundos
+      setInterval(() => {
+        if (appState.config.sheetsUrl && appState.config.sheetsUrl.startsWith('http')) {
+          syncNow();
+        }
+      }, 30000);
+
+      // Seleciona primeiro aluno se existir
+      if (appState.alunos.length > 0) {
+        selecionarAluno(appState.alunos[0].id);
+      }
+
+      // Seletor de professor do header
+      document.getElementById('select-avaliador').addEventListener('change', (e) => {
+        appState.selectedProfNome = e.target.value;
+      });
+
+      // Busca Aluno
+      const inputBusca = document.getElementById('input-busca-aluno');
+      inputBusca.addEventListener('input', (e) => renderAlunosTable(e.target.value));
+      document.getElementById('btn-limpar-busca').addEventListener('click', () => {
+        inputBusca.value = '';
+        renderAlunosTable();
+      });
+
+      // Botões Cronômetro
+      document.getElementById('btn-timer-toggle').addEventListener('click', toggleTimer);
+      document.getElementById('btn-proximo-estagio').addEventListener('click', proximoEstagio);
+      document.getElementById('btn-encerrar-teste').addEventListener('click', encerrarTeste);
+      document.getElementById('btn-reset-estagios').addEventListener('click', () => {
+        if (!confirm('Deseja zerar os dados de todos os estágios do teste atual?')) return;
+        if (appState.timerInterval) clearInterval(appState.timerInterval);
+        appState.testActive = false;
+        appState.tempoRestanteNoEstagio = appState.config.protocolo.tempoEstagio;
+        appState.tempoTotalEfetivo = 0;
+        appState.estagioAtualIndex = 1;
+        appState.estagiosDados = buildEmptyEstagios();
+        document.getElementById('btn-timer-toggle').innerHTML = '▶ Iniciar Cronômetro';
+        document.getElementById('monitor-tempo').textContent = formatTimeMMSS(appState.tempoRestanteNoEstagio);
+        document.getElementById('monitor-tempo-total').textContent = '00:00';
+        updateMonitorHeader();
+        renderEstagiosTable();
+        atualizarCalculosDesfecho();
+      });
+
+      // Recuperação
+      document.getElementById('btn-rec-start').addEventListener('click', toggleRecTimer);
+      document.getElementById('btn-rec-reset').addEventListener('click', resetRecTimer);
+
+      // Salvar Avaliação Final
+      document.getElementById('btn-salvar-avaliacao').addEventListener('click', salvarAvaliacaoFinal);
+
+      // Relatório Modal
+      document.getElementById('btn-relatorio-evolucao').addEventListener('click', () => gerarRelatorioAluno());
+      document.getElementById('btn-close-relatorio').addEventListener('click', () => {
+        document.getElementById('modal-relatorio').style.display = 'none';
+      });
+      document.getElementById('btn-imprimir-relatorio').addEventListener('click', () => {
+        window.print();
+      });
+
+      // Modal Sincronização Google Sheets / Nuvem
+      document.getElementById('btn-open-sync').addEventListener('click', () => {
+        document.getElementById('input-sync-url').value = appState.config.sheetsUrl || '';
+        const feedback = document.getElementById('sync-test-feedback');
+        if (feedback) feedback.style.display = 'none';
+        document.getElementById('modal-sync').style.display = 'flex';
+      });
+      document.getElementById('btn-close-sync').addEventListener('click', () => {
+        document.getElementById('modal-sync').style.display = 'none';
+      });
+
+      // Salvar e Sincronizar
+      document.getElementById('btn-salvar-sync').addEventListener('click', async () => {
+        const urlDigitada = document.getElementById('input-sync-url').value.trim();
+        appState.config.sheetsUrl = urlDigitada;
+        saveStorage(false);
+        const feedback = document.getElementById('sync-test-feedback');
+        feedback.style.display = 'block';
+        feedback.style.background = '#f0fdfa';
+        feedback.style.color = '#0f766e';
+        feedback.style.border = '1px solid #99f6e4';
+        feedback.textContent = 'Configuração salva! Sincronizando...';
+
+        const ok = await syncNow();
+        if (ok) {
+          feedback.style.background = '#ecfdf5';
+          feedback.style.color = '#065f46';
+          feedback.style.border = '1px solid #a7f3d0';
+          feedback.textContent = '✅ Conexão OK — dados sincronizados';
+        } else {
+          feedback.style.background = '#fef2f2';
+          feedback.style.color = '#991b1b';
+          feedback.style.border = '1px solid #fecaca';
+          feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
+        }
+      });
+
+      // Botão Sincronizar Agora no modal
+      document.getElementById('btn-sync-agora').addEventListener('click', async () => {
+        const urlDigitada = document.getElementById('input-sync-url').value.trim();
+        if (urlDigitada) {
+          appState.config.sheetsUrl = urlDigitada;
+          saveStorage(false);
+        }
+        const feedback = document.getElementById('sync-test-feedback');
+        feedback.style.display = 'block';
+        feedback.style.background = '#f8fafc';
+        feedback.style.color = '#475569';
+        feedback.style.border = '1px solid #cbd5e1';
+        feedback.textContent = 'Sincronizando...';
+
+        const ok = await syncNow();
+        if (ok) {
+          feedback.style.background = '#ecfdf5';
+          feedback.style.color = '#065f46';
+          feedback.style.border = '1px solid #a7f3d0';
+          feedback.textContent = '✅ Conexão OK — dados sincronizados';
+        } else {
+          feedback.style.background = '#fef2f2';
+          feedback.style.color = '#991b1b';
+          feedback.style.border = '1px solid #fecaca';
+          feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
+        }
+      });
+
+      // Botão Testar Conexão (APENAS MENSAGENS AMIGÁVEIS - NUNCA EXIBE JSON)
+      document.getElementById('btn-testar-sync').addEventListener('click', async () => {
+        const url = document.getElementById('input-sync-url').value.trim();
+        const feedback = document.getElementById('sync-test-feedback');
+        feedback.style.display = 'block';
+
+        if (!url || !url.startsWith('http')) {
+          feedback.style.background = '#fef2f2';
+          feedback.style.color = '#991b1b';
+          feedback.style.border = '1px solid #fecaca';
+          feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
+          return;
+        }
+
+        feedback.style.background = '#f8fafc';
+        feedback.style.color = '#475569';
+        feedback.style.border = '1px solid #cbd5e1';
+        feedback.textContent = 'Testando conexão...';
+
+        try {
+          const res = await fetch(url, { method: 'GET', cache: 'no-store' });
+          if (res.ok) {
+            try {
+              const data = await res.json();
+              if (data && typeof data === 'object') {
+                feedback.style.background = '#ecfdf5';
+                feedback.style.color = '#065f46';
+                feedback.style.border = '1px solid #a7f3d0';
+                feedback.textContent = '✅ Conexão OK — dados sincronizados';
+              } else {
+                feedback.style.background = '#fef2f2';
+                feedback.style.color = '#991b1b';
+                feedback.style.border = '1px solid #fecaca';
+                feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
+              }
+            } catch (jsonErr) {
+              feedback.style.background = '#fef2f2';
+              feedback.style.color = '#991b1b';
+              feedback.style.border = '1px solid #fecaca';
+              feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
+            }
+          } else {
+            feedback.style.background = '#fef2f2';
+            feedback.style.color = '#991b1b';
+            feedback.style.border = '1px solid #fecaca';
+            feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
+          }
+        } catch (err) {
+          feedback.style.background = '#fef2f2';
+          feedback.style.color = '#991b1b';
+          feedback.style.border = '1px solid #fecaca';
+          feedback.textContent = '❌ Erro de conexão. Verifique a URL.';
+        }
+      });
+
+      // Botões de Backup (Exportar / Importar)
+      const btnExportar = document.getElementById('btn-exportar-backup');
+      if (btnExportar) {
+        btnExportar.addEventListener('click', exportarBackupJSON);
+      }
+
+      const btnImportar = document.getElementById('btn-importar-backup');
+      const inputImportFile = document.getElementById('input-import-backup');
+      if (btnImportar && inputImportFile) {
+        btnImportar.addEventListener('click', () => inputImportFile.click());
+        inputImportFile.addEventListener('change', (e) => {
+          if (e.target.files && e.target.files[0]) {
+            importarBackupJSON(e.target.files[0]);
+            e.target.value = '';
+          }
+        });
+      }
+
+      // Botão Copiar Script
+      const btnCopiarScript = document.getElementById('btn-copiar-script');
+      if (btnCopiarScript) {
+        btnCopiarScript.addEventListener('click', () => {
+          const code = document.getElementById('code-apps-script').innerText;
+          navigator.clipboard.writeText(code).then(() => {
+            btnCopiarScript.textContent = '✓ Copiado!';
+            setTimeout(() => { btnCopiarScript.textContent = '📋 Copiar Código'; }, 2000);
+          }).catch(() => {
+            alert('Selecione e copie o código manualmente.');
+          });
+        });
+      }
+
+      // Modal Novo / Edição Aluno
+      document.getElementById('btn-novo-aluno').addEventListener('click', () => {
+        document.getElementById('form-aluno').reset();
+        document.getElementById('aluno-id').value = '';
+        document.getElementById('modal-aluno-title').textContent = 'Cadastrar Novo Aluno / Atleta';
+        document.getElementById('btn-submit-aluno').textContent = '+ Cadastrar Aluno';
+        document.getElementById('modal-aluno').style.display = 'flex';
+      });
+      document.getElementById('btn-close-aluno').addEventListener('click', () => {
+        document.getElementById('modal-aluno').style.display = 'none';
+      });
+      document.getElementById('btn-cancel-aluno').addEventListener('click', () => {
+        document.getElementById('modal-aluno').style.display = 'none';
+      });
+
+      document.getElementById('form-aluno').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('aluno-id').value;
+        const nome = document.getElementById('aluno-nome').value.trim();
+        const telefone = document.getElementById('aluno-telefone').value.trim();
+        const email = document.getElementById('aluno-email').value.trim();
+        const idade = parseInt(document.getElementById('aluno-idade').value, 10);
+        const sexo = document.getElementById('aluno-sexo').value;
+        const peso = parseFloat(document.getElementById('aluno-peso').value);
+        const altura = parseFloat(document.getElementById('aluno-altura').value);
+
+        if (!nome) { alert('Informe o nome completo.'); return; }
+        if (isNaN(idade) || idade < 10 || idade > 90) { alert('Idade deve ser entre 10 e 90 anos.'); return; }
+        if (isNaN(peso) || peso < 30 || peso > 250) { alert('Peso deve ser entre 30 e 250 kg.'); return; }
+        if (isNaN(altura) || altura < 1.20 || altura > 2.20) { alert('Altura deve ser entre 1.20 e 2.20 m.'); return; }
+
+        const nowIso = new Date().toISOString();
+
+        if (id) {
+          // Edição
+          const a = appState.alunos.find(x => x.id === id);
+          if (a) {
+            a.nome = nome;
+            a.telefone = telefone;
+            a.email = email;
+            a.idade = idade;
+            a.sexo = sexo;
+            a.peso = peso;
+            a.altura = altura;
+            a.atualizadoEm = nowIso;
+          }
+        } else {
+          // Novo
+          const novoId = 'a_' + Date.now();
+          const novoAluno = {
+            id: novoId,
+            nome,
+            telefone,
+            email,
+            idade,
+            sexo,
+            peso,
+            altura,
+            criadoEm: nowIso,
+            atualizadoEm: nowIso
+          };
+          appState.alunos.push(novoAluno);
+          selecionarAluno(novoId);
+        }
+
+        saveStorage();
+        renderAlunosTable(document.getElementById('input-busca-aluno').value);
+        renderEnvioSection();
+        document.getElementById('modal-aluno').style.display = 'none';
+      });
+
+      // Modal Professor
+      document.getElementById('btn-novo-professor').addEventListener('click', () => {
+        document.getElementById('form-professor').reset();
+        document.getElementById('prof-id').value = '';
+        document.getElementById('modal-prof-title').textContent = 'Adicionar Professor / Avaliador';
+        document.getElementById('modal-professor').style.display = 'flex';
+      });
+      document.getElementById('btn-close-prof').addEventListener('click', () => {
+        document.getElementById('modal-professor').style.display = 'none';
+      });
+      document.getElementById('btn-cancel-prof').addEventListener('click', () => {
+        document.getElementById('modal-professor').style.display = 'none';
+      });
+
+      document.getElementById('form-professor').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('prof-id').value;
+        const nome = document.getElementById('prof-nome').value.trim();
+        const cref = document.getElementById('prof-cref').value.trim();
+        const tel = document.getElementById('prof-tel').value.trim();
+        const email = document.getElementById('prof-email').value.trim();
+
+        if (!nome || !cref) {
+          alert('Preencha Nome e CREF obrigatoriamente.');
+          return;
+        }
+
+        const nowIso = new Date().toISOString();
+
+        if (id) {
+          const p = appState.professores.find(x => x.id === id);
+          if (p) {
+            p.nome = nome;
+            p.cref = cref;
+            p.tel = tel;
+            p.telefone = tel;
+            p.email = email;
+            p.atualizadoEm = nowIso;
+          }
+        } else {
+          const novoP = {
+            id: 'p_' + Date.now(),
+            nome,
+            cref,
+            tel,
+            telefone: tel,
+            email,
+            ativo: true,
+            atualizadoEm: nowIso
+          };
+          appState.professores.push(novoP);
+        }
+
+        saveStorage();
+        renderProfessores();
+        document.getElementById('modal-professor').style.display = 'none';
+      });
+
+      // Fechar modal clicando fora
+      window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-backdrop')) {
+          e.target.style.display = 'none';
+        }
+      });
+    });
+  </script>
+<script>
+/* Skip artifact shell — fixed helpers served beside every artifact. */
+(function () {
+  "use strict";
+
+  var fmt = {
+    num: function (v, opts) { return new Intl.NumberFormat("pt-BR", opts || {}).format(v); },
+    brl: function (v) { return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v); },
+    pct: function (v) { return new Intl.NumberFormat("pt-BR", { style: "percent", maximumFractionDigits: 1 }).format(v); }
+  };
+
+  // axisFmt keeps axis tick labels short (compact notation) so long values
+  // (e.g. full BRL amounts) never clip against the plot edge.
+  function axisFmt(v) {
+    return fmt.num(v, { notation: "compact", maximumFractionDigits: 1 });
+  }
+
+  // format accepts a function OR one of the fmt names ("num" | "brl" | "pct").
+  function coerceFormat(spec) {
+    if (typeof spec === "function") return spec;
+    if (typeof spec === "string" && fmt[spec]) return fmt[spec];
+    return function (v) { return fmt.num(v); };
+  }
+
+  function accent() {
+    return getComputedStyle(document.documentElement).getPropertyValue("--accent").trim() || "#2563eb";
+  }
+  function mutedColor() {
+    return getComputedStyle(document.documentElement).getPropertyValue("--text-muted").trim() || "#5b6472";
+  }
+  function svgEl(tag, attrs) {
+    var el = document.createElementNS("http://www.w3.org/2000/svg", tag);
+    for (var k in attrs) el.setAttribute(k, attrs[k]);
+    return el;
+  }
+  function frame(el, w, h) {
+    var svg = svgEl("svg", { viewBox: "0 0 " + w + " " + h, role: "img" });
+    el.innerHTML = "";
+    el.appendChild(svg);
+    return svg;
+  }
+
+  // maxOf guards the axis scale: empty values would give -Infinity (truthy,
+  // so "|| 1" can't catch it) and a non-positive max would flip the chart.
+  function maxOf(values) {
+    var m = values.length ? Math.max.apply(null, values) : 0;
+    return m > 0 ? m : 1;
+  }
+
+  // bar(el, {labels:[], values:[], color?, format?}) — vertical bar chart.
+  function bar(el, cfg) {
+    var W = 640, H = 280, padL = 46, padB = 30, padT = 12;
+    var svg = frame(el, W, H);
+    var max = maxOf(cfg.values);
+    var n = cfg.values.length;
+    var plotW = W - padL - 12, plotH = H - padT - padB;
+    var step = plotW / n, bw = Math.min(step * 0.62, 64);
+    var color = cfg.color || accent();
+    var f = coerceFormat(cfg.format);
+    for (var g = 0; g <= 4; g++) {
+      var gy = padT + plotH - (plotH * g) / 4;
+      svg.appendChild(svgEl("line", { x1: padL, y1: gy, x2: W - 12, y2: gy, stroke: "currentColor", "stroke-opacity": 0.08 }));
+      var lbl = svgEl("text", { x: padL - 8, y: gy + 4, "text-anchor": "end", "font-size": 10, fill: mutedColor() });
+      lbl.textContent = axisFmt((max * g) / 4);
+      svg.appendChild(lbl);
+    }
+    cfg.values.forEach(function (v, i) {
+      var bh = Math.max(0, (v / max) * plotH);
+      var x = padL + i * step + (step - bw) / 2;
+      var y = padT + plotH - bh;
+      var r = svgEl("rect", { x: x, y: y, width: bw, height: bh, rx: 4, fill: color });
+      var t = svgEl("title", {});
+      t.textContent = cfg.labels[i] + ": " + f(v);
+      r.appendChild(t);
+      svg.appendChild(r);
+      var tx = svgEl("text", { x: x + bw / 2, y: H - 10, "text-anchor": "middle", "font-size": 11, fill: mutedColor() });
+      tx.textContent = cfg.labels[i];
+      svg.appendChild(tx);
+    });
+  }
+
+  // line(el, {labels:[], values:[], color?, format?}) — single-series line.
+  function line(el, cfg) {
+    var W = 640, H = 280, padL = 46, padB = 30, padT = 12;
+    var svg = frame(el, W, H);
+    var max = maxOf(cfg.values);
+    var n = cfg.values.length;
+    var plotW = W - padL - 16, plotH = H - padT - padB;
+    var color = cfg.color || accent();
+    var f = coerceFormat(cfg.format);
+    for (var g = 0; g <= 4; g++) {
+      var gy = padT + plotH - (plotH * g) / 4;
+      svg.appendChild(svgEl("line", { x1: padL, y1: gy, x2: W - 16, y2: gy, stroke: "currentColor", "stroke-opacity": 0.08 }));
+      var lbl = svgEl("text", { x: padL - 8, y: gy + 4, "text-anchor": "end", "font-size": 10, fill: mutedColor() });
+      lbl.textContent = axisFmt((max * g) / 4);
+      svg.appendChild(lbl);
+    }
+    var pts = cfg.values.map(function (v, i) {
+      var x = padL + (n === 1 ? plotW / 2 : (plotW * i) / (n - 1));
+      var y = padT + plotH - (v / max) * plotH;
+      return [x, y];
+    });
+    var d = pts.map(function (p, i) { return (i ? "L" : "M") + p[0].toFixed(1) + " " + p[1].toFixed(1); }).join(" ");
+    svg.appendChild(svgEl("path", { d: d, fill: "none", stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }));
+    pts.forEach(function (p, i) {
+      var c = svgEl("circle", { cx: p[0], cy: p[1], r: 3.5, fill: color });
+      var t = svgEl("title", {});
+      t.textContent = cfg.labels[i] + ": " + f(cfg.values[i]);
+      c.appendChild(t);
+      svg.appendChild(c);
+      var tx = svgEl("text", { x: p[0], y: H - 10, "text-anchor": "middle", "font-size": 11, fill: mutedColor() });
+      tx.textContent = cfg.labels[i];
+      svg.appendChild(tx);
+    });
+  }
+
+  // donut(el, {labels:[], values:[], colors?}) — donut with center total.
+  function donut(el, cfg) {
+    var W = 320, H = 280, cx = W / 2, cy = H / 2, R = 92, r = 58;
+    var svg = frame(el, W, H);
+    var total = cfg.values.reduce(function (a, b) { return a + b; }, 0) || 1;
+    var palette = cfg.colors || [accent(), "#1baf7a", "#eda100", "#e34948", "#4a3aa7", "#e87ba4"];
+    var a0 = -Math.PI / 2;
+    cfg.values.forEach(function (v, i) {
+      var a1 = a0 + (v / total) * Math.PI * 2;
+      var large = a1 - a0 > Math.PI ? 1 : 0;
+      var p = ["M", cx + R * Math.cos(a0), cy + R * Math.sin(a0),
+        "A", R, R, 0, large, 1, cx + R * Math.cos(a1), cy + R * Math.sin(a1),
+        "L", cx + r * Math.cos(a1), cy + r * Math.sin(a1),
+        "A", r, r, 0, large, 0, cx + r * Math.cos(a0), cy + r * Math.sin(a0), "Z"].join(" ");
+      var path = svgEl("path", { d: p, fill: palette[i % palette.length] });
+      var t = svgEl("title", {});
+      t.textContent = cfg.labels[i] + ": " + fmt.num(v) + " (" + fmt.pct(v / total) + ")";
+      path.appendChild(t);
+      svg.appendChild(path);
+      a0 = a1;
+    });
+    var center = svgEl("text", { x: cx, y: cy + 5, "text-anchor": "middle", "font-size": 20, "font-weight": 650, fill: "currentColor" });
+    center.textContent = fmt.num(total);
+    svg.appendChild(center);
+  }
+
+  window.skipShell = { fmt: fmt };
+  window.skipChart = { bar: bar, line: line, donut: donut };
+})();
+
+</script>
+</body>
+</html>
