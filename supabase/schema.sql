@@ -141,27 +141,31 @@ grant select, insert, update, delete
 revoke all on public.professores, public.alunos, public.avaliacoes, public.excluidos, public.config from anon;
 
 -- ---------------------------------------------------------------------------
--- 3. CADASTRAR O PRIMEIRO PROFESSOR
+-- 3. VINCULAR AS CONTAS DE LOGIN AOS PROFESSORES
 --
 -- Há um ovo-e-galinha: as políticas só liberam quem já é professor, e no banco
--- vazio ninguém é. O primeiro registro precisa ser criado aqui, uma vez.
+-- vazio ninguém é. Este bloco resolve criando uma linha em 'professores' para
+-- cada conta de login que ainda não tenha uma, puxando o e-mail de auth.users.
 --
--- Passo 1 — crie a conta de login em
---           Authentication → Users → Add user (e-mail + senha).
--- Passo 2 — troque os dados abaixo pelos reais e rode este bloco.
---           Repita para cada professor. Do segundo em diante, dá para cadastrar
---           pelo próprio app.
+-- Antes de rodar, crie as contas em Authentication → Users → Add user,
+-- marcando 'Auto Confirm User'. Depois rode este bloco uma vez. Pode rodar de
+-- novo sem duplicar: só cria para quem ainda não está vinculado.
+--
+-- O nome sai do e-mail e o CREF nasce vazio — ambos se corrigem pelo próprio
+-- app, em 'Gestão de Professores & Avaliadores', depois do primeiro login.
 -- ---------------------------------------------------------------------------
 
--- insert into public.professores (id, nome, cref, telefone, email, ativo, user_id)
--- select
---   'p_' || extract(epoch from now())::bigint,
---   'Prof. Nome Completo',
---   '000000-G/SP',
---   '(11) 90000-0000',
---   'professor@institutomoove.com.br',
---   true,
---   id
--- from auth.users
--- where email = 'professor@institutomoove.com.br'
--- on conflict (id) do nothing;
+insert into public.professores (id, nome, cref, email, ativo, user_id)
+select
+  'p_' || replace(u.id::text, '-', ''),
+  initcap(replace(split_part(u.email, '@', 1), '.', ' ')),
+  '',
+  u.email,
+  true,
+  u.id
+from auth.users u
+where u.email is not null
+  and not exists (select 1 from public.professores p where p.user_id = u.id);
+
+-- Confirmação: deve listar um professor por conta de login criada.
+select id, nome, email, ativo, user_id from public.professores order by nome;
