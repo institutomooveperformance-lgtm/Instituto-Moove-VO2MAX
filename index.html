@@ -132,7 +132,14 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
     }
 
     html, body {
-      overflow-x: hidden;
+      /* `clip`, e não `hidden`: evita a barra de rolagem horizontal sem
+         transformar html/body em containers de rolagem. Com `hidden`, o
+         overflow-y computa para `auto`, e o `overscroll-behavior: none`
+         que o basecoat aplica no body passa a bloquear o encadeamento da
+         rolagem para a viewport — o efeito é que a roda do mouse para de
+         rolar a página, embora o scroll programático continue funcionando.
+         Não troque por `hidden`. */
+      overflow-x: clip;
       max-width: 100%;
     }
 
