@@ -1936,78 +1936,21 @@ function doPost(e) {
       EXCLUIDOS: 'moove_excluidos'
     };
 
-    // Dados Iniciais Realistas (Mock)
-    const DEFAULT_PROFESSORES = [
-      { id: 'p1', nome: 'Prof. Dr. Ricardo Matos', cref: '045920-G/SP', tel: '(11) 98122-3344', email: 'ricardo@moove.com.br', ativo: true },
-      { id: 'p2', nome: 'Profª. Marcela Esteves', cref: '068210-G/SP', tel: '(11) 97233-4455', email: 'marcela@moove.com.br', ativo: true }
-    ];
+    // O app nasce vazio: o instituto cadastra seus próprios alunos e avaliadores.
+    const DEFAULT_PROFESSORES = [];
+    const DEFAULT_ALUNOS = [];
+    const DEFAULT_AVALIACOES = [];
 
-    const DEFAULT_ALUNOS = [
-      { id: 'a1', nome: 'Gabriel Vasconcelos', idade: 28, sexo: 'Masculino', peso: 74.2, altura: 1.77, telefone: '(11) 98123-4567', email: 'gabriel.vasconcelos@email.com' },
-      { id: 'a2', nome: 'Camila Duarte Fontes', idade: 33, sexo: 'Feminino', peso: 59.0, altura: 1.64, telefone: '(11) 99876-5432', email: 'camila.duarte@email.com' },
-      { id: 'a3', nome: 'Eduardo Silveira Lima', idade: 45, sexo: 'Masculino', peso: 82.5, altura: 1.80, telefone: '(21) 97654-3210', email: 'eduardo.lima@email.com' }
-    ];
-
-    const DEFAULT_AVALIACOES = [
-      {
-        id: 'ev1',
-        alunoId: 'a1',
-        alunoNome: 'Gabriel Vasconcelos',
-        data: '15/01/2025',
-        timestamp: Date.now() - 30 * 86400000,
-        velFinal: 14.5,
-        vo2Max: 50.8,
-        metsMax: 14.5,
-        duracaoSegundos: 1680,
-        fcPico: 188,
-        fc60s: 162,
-        fc120s: 146,
-        queda1min: 26,
-        queda2min: 42,
-        classificacao: 'Excelente',
-        avaliador: 'Prof. Dr. Ricardo Matos',
-        obs: 'Excelente perfil de potência aeróbia e recuperação rápida.',
-        estagiosSnapshot: [
-          { estagio: 1, velocidade: 8.0, mets: 8.0, fc: 122, borg: 2, talkTest: 'Fala normal (confortável)', obs: 'Adaptação excelente' },
-          { estagio: 2, velocidade: 8.5, mets: 8.5, fc: 130, borg: 3, talkTest: 'Fala normal (confortável)', obs: 'Estável' },
-          { estagio: 3, velocidade: 9.0, mets: 9.0, fc: 138, borg: 4, talkTest: 'Fala normal (confortável)', obs: 'Ritmo constante' },
-          { estagio: 4, velocidade: 9.5, mets: 9.5, fc: 145, borg: 5, talkTest: 'Fala entrecortada / difícil', obs: 'Início de ventilação profunda' },
-          { estagio: 5, velocidade: 10.0, mets: 10.0, fc: 154, borg: 6, talkTest: 'Fala entrecortada / difícil', obs: 'Boa mecânica' },
-          { estagio: 6, velocidade: 10.5, mets: 10.5, fc: 162, borg: 7, talkTest: 'Fala entrecortada / difícil', obs: 'Sudorese moderada' },
-          { estagio: 7, velocidade: 11.0, mets: 11.0, fc: 170, borg: 8, talkTest: 'Incapaz de falar continuamente', obs: 'Esforço intenso' },
-          { estagio: 8, velocidade: 14.5, mets: 14.5, fc: 188, borg: 10, talkTest: 'Incapaz de falar continuamente', obs: 'Pico de esforço atingido' }
-        ]
-      },
-      {
-        id: 'ev2',
-        alunoId: 'a1',
-        alunoNome: 'Gabriel Vasconcelos',
-        data: '18/02/2025',
-        timestamp: Date.now() - 5 * 86400000,
-        velFinal: 15.0,
-        vo2Max: 52.5,
-        metsMax: 15.0,
-        duracaoSegundos: 1800,
-        fcPico: 190,
-        fc60s: 158,
-        fc120s: 140,
-        queda1min: 32,
-        queda2min: 50,
-        classificacao: 'Superior',
-        avaliador: 'Prof. Dr. Ricardo Matos',
-        obs: 'Evolução consistente na tolerância a cargas elevadas.',
-        estagiosSnapshot: [
-          { estagio: 1, velocidade: 8.0, mets: 8.0, fc: 118, borg: 2, talkTest: 'Fala normal (confortável)', obs: 'Confortável' },
-          { estagio: 2, velocidade: 8.5, mets: 8.5, fc: 125, borg: 3, talkTest: 'Fala normal (confortável)', obs: 'Estável' },
-          { estagio: 3, velocidade: 9.0, mets: 9.0, fc: 133, borg: 3, talkTest: 'Fala normal (confortável)', obs: 'Economia de corrida notória' },
-          { estagio: 4, velocidade: 9.5, mets: 9.5, fc: 141, borg: 4, talkTest: 'Fala normal (confortável)', obs: 'Transição tranquila' },
-          { estagio: 5, velocidade: 10.0, mets: 10.0, fc: 149, borg: 5, talkTest: 'Fala entrecortada / difícil', obs: 'Aceleração controlada' },
-          { estagio: 6, velocidade: 11.0, mets: 11.0, fc: 161, borg: 7, talkTest: 'Fala entrecortada / difícil', obs: 'Boa tolerância' },
-          { estagio: 7, velocidade: 13.0, mets: 13.0, fc: 174, borg: 8, talkTest: 'Incapaz de falar continuamente', obs: 'Cadência elevada' },
-          { estagio: 8, velocidade: 15.0, mets: 15.0, fc: 190, borg: 10, talkTest: 'Incapaz de falar continuamente', obs: 'Exaustão voluntária no pico' }
-        ]
-      }
-    ];
+    // Versões anteriores deste app vinham com registros de demonstração, que
+    // ficaram gravados no localStorage de quem já o abriu. O mapa abaixo os
+    // identifica para remoção única em loadStorage(). O nome é conferido junto
+    // com o id de propósito: se alguém aproveitou um desses cadastros e trocou
+    // o nome, o registro virou dado real e deve ser preservado.
+    const REGISTROS_DEMO = {
+      alunos:      { a1: 'Gabriel Vasconcelos', a2: 'Camila Duarte Fontes', a3: 'Eduardo Silveira Lima' },
+      professores: { p1: 'Prof. Dr. Ricardo Matos', p2: 'Profª. Marcela Esteves' },
+      avaliacoes:  { ev1: 'Gabriel Vasconcelos', ev2: 'Gabriel Vasconcelos' }
+    };
 
     const appState = {
       alunos: [],
@@ -2200,6 +2143,20 @@ function doPost(e) {
         });
         appState.avaliacoes.forEach(ev => {
           if (!ev.atualizadoEm) { ev.atualizadoEm = nowIso; changed = true; }
+        });
+
+        // Remove os registros de demonstração que versões anteriores gravaram
+        // neste aparelho. O tombstone é registrado junto para que a exclusão se
+        // propague aos demais aparelhos assim que houver sincronização.
+        const campoNome = { alunos: 'nome', professores: 'nome', avaliacoes: 'alunoNome' };
+        ['alunos', 'professores', 'avaliacoes'].forEach(tipo => {
+          const demo = REGISTROS_DEMO[tipo];
+          const campo = campoNome[tipo];
+          const aRemover = appState[tipo].filter(r => demo[r.id] && demo[r.id] === r[campo]);
+          if (aRemover.length === 0) return;
+          aRemover.forEach(r => registrarExclusao(tipo, r.id));
+          appState[tipo] = appState[tipo].filter(r => !aRemover.includes(r));
+          changed = true;
         });
 
         // Requisito 2: Eliminar qualquer registro local que esteja na lista de excluídos
@@ -2876,6 +2833,11 @@ function doPost(e) {
       select.value = appState.selectedProfNome;
 
       // Tabela Gestão
+      if (appState.professores.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Nenhum professor cadastrado. Use '+ Adicionar Professor' para começar.</td></tr>`;
+        return;
+      }
+
       tbody.innerHTML = appState.professores.map(p => `
         <tr>
           <td>
