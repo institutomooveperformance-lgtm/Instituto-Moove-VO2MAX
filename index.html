@@ -1092,7 +1092,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       <div class="section-head">
         <div>
           <h2 class="section-title">🎯 Desfecho do Teste, VO₂ Máximo & Recuperação</h2>
-          <div class="section-desc">Cálculos metabólicos ACSM, cinética de recuperação da FC e classificação de aptidão.</div>
+          <div class="section-desc">Cálculos metabólicos, cinética de recuperação da FC e classificação de aptidão Cooper/ACSM.</div>
         </div>
       </div>
 
@@ -1105,7 +1105,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         <div class="stat-card highlight">
           <div class="stat-label">VO₂ Máximo Estimado</div>
           <div class="stat-val" style="color: var(--accent);" id="res-vo2-max">0.0 <span style="font-size: 0.9rem;">mL/kg/min</span></div>
-          <div class="stat-sub">Fórmula ACSM Esteira</div>
+          <div class="stat-sub">Velocidade final × 3,5</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">METs Máximo</div>
@@ -3109,7 +3109,7 @@ function doPost(e) {
       }
     });
 
-    // CÁLCULOS DO DESFECHO (ACSM)
+    // CÁLCULOS DO DESFECHO
     function atualizarCalculosDesfecho() {
       const velIni = (appState.config && appState.config.protocolo && appState.config.protocolo.velocidadeInicial !== undefined) ? appState.config.protocolo.velocidadeInicial : 8.0;
       // Procura o maior estágio concluído ou em andamento com dados
@@ -3122,8 +3122,11 @@ function doPost(e) {
         velFinal = cur ? cur.velocidade : velIni;
       }
 
-      // Fórmula ACSM para corrida em esteira plana (0%):
-      // VO2 (mL/kg/min) = Velocidade (km/h) × 3,5
+      // Estimativa adotada pelo Instituto Moove para esteira plana (0%):
+      // VO2 (mL/kg/min) = Velocidade final (km/h) × 3,5
+      // Atenção: esta NÃO é a equação da ACSM. A da ACSM para corrida a 0%
+      // de inclinação é VO2 = 3,33 × velocidade (km/h) + 3,5, e devolve de
+      // 1 a 2 mL/kg/min mais. A conta abaixo é uma escolha do Instituto.
       const vo2 = parseFloat((velFinal * 3.5).toFixed(1));
       const mets = parseFloat((vo2 / 3.5).toFixed(1));
 

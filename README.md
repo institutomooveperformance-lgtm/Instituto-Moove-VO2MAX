@@ -79,11 +79,28 @@ opção A ou B.
       e 2 avaliações de exemplo (`DEFAULT_ALUNOS`, `DEFAULT_PROFESSORES`,
       `DEFAULT_AVALIACOES`), que aparecem como reais no primeiro acesso de cada
       aparelho.
-- [ ] **Conferir a fórmula de VO₂.** O código calcula `VO₂ = velocidade × 3,5`,
-      mas a equação ACSM para corrida a 0% de inclinação é
-      `VO₂ = 3,33 × velocidade(km/h) + 3,5`. Os METs saem de
-      `velocidade × 3,5 / 3,5`, que é sempre igual à velocidade. Como a
-      classificação Cooper deriva desse VO₂, os laudos ficam deslocados.
+
+## Cálculo do VO₂ máximo
+
+O app estima `VO₂ = velocidade final (km/h) × 3,5`, e os METs saem de `VO₂ / 3,5`
+— o que faz os METs coincidirem numericamente com a velocidade em km/h.
+
+**Essa é uma escolha deliberada do Instituto Moove, não a equação da ACSM.** Fica
+registrado aqui para que ninguém a "corrija" por engano. A equação da ACSM para
+corrida a 0% de inclinação seria `VO₂ = 3,33 × velocidade + 3,5`, que devolve de
+1 a 2 mL/kg/min mais e pode deslocar a classificação Cooper de alunos próximos
+das faixas:
+
+| Velocidade final | Conta atual | Equação ACSM |
+|---|---|---|
+| 8,0 km/h  | 28,0 | 30,2 |
+| 10,0 km/h | 35,0 | 36,8 |
+| 12,0 km/h | 42,0 | 43,5 |
+| 15,0 km/h | 52,5 | 53,5 |
+
+As **tabelas normativas** de classificação (Cooper Institute / ACSM) e os
+**critérios de interrupção** do teste seguem as referências originais — o desvio
+acima vale só para a estimativa do VO₂.
 
 ## Sincronização entre aparelhos
 
