@@ -169,3 +169,50 @@ where u.email is not null
 
 -- Confirmação: deve listar um professor por conta de login criada.
 select id, nome, email, ativo, user_id from public.professores order by nome;
+
+-- ---------------------------------------------------------------------------
+-- 4. PROTEÇÃO DA COLUNA QUE AUTORIZA O ACESSO
+--
+-- As políticas acima deixam qualquer professor ativo escrever em qualquer linha
+-- de 'professores' — o que é adequado para nome, CREF e telefone, mas não para
+-- user_id: é essa coluna que concede o acesso. Sem a proteção abaixo, um
+-- professor poderia apontar o user_id de um colega para a própria conta, ou
+-- zerá-lo e derrubar o acesso dele.
+--
+-- O gatilho congela user_id para qualquer chamada vinda do app (papel
+-- 'authenticated'). Só a Edge Function, que usa service_role, atravessa. Assim
+-- o vínculo de acesso passa a ser alterável apenas pelo caminho que verifica
+-- quem está pedindo.
+-- ---------------------------------------------------------------------------
+
+create or replace function public.protege_vinculo_de_acesso()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  papel text := coalesce(
+    current_setting('request.jwt.claims', true)::jsonb ->> 'role',
+    ''
+  );
+begin
+  -- Só chamadas vindas do app carregam papel 'authenticated'. O SQL Editor do
+  -- painel roda como postgres (papel vazio) e a Edge Function usa service_role;
+  -- ambos precisam atravessar, senão o bloco de bootstrap da seção 3 não
+  -- conseguiria vincular o primeiro professor.
+  if papel in ('authenticated', 'anon') then
+    if tg_op = 'INSERT' then
+      new.user_id := null;
+    else
+      new.user_id := old.user_id;
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists protege_vinculo on public.professores;
+create trigger protege_vinculo
+  before insert or update on public.professores
+  for each row execute function public.protege_vinculo_de_acesso();

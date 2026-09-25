@@ -1347,10 +1347,13 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       <div class="section-head">
         <div>
           <h2 class="section-title">👨‍🏫 Gestão de Professores & Avaliadores</h2>
-          <div class="section-desc">Cadastre e gerencie a equipe responsável pela aplicação e validação dos testes.</div>
+          <div class="section-desc">Cadastre e gerencie a equipe responsável pela aplicação e validação dos testes. Adicionar um professor aqui apenas o disponibiliza para assinar laudos; para que ele entre no sistema, use &quot;Criar Acesso ao Sistema&quot;.</div>
         </div>
         <button type="button" class="btn-act btn-primary" id="btn-novo-professor">
           + Adicionar Professor
+        </button>
+        <button type="button" class="btn-act btn-outline-primary" id="btn-novo-acesso">
+          🔑 Criar Acesso ao Sistema
         </button>
       </div>
 
@@ -1537,6 +1540,61 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
           <input type="file" id="input-import-backup" accept=".json" style="display: none;">
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: CRIAR ACESSO AO SISTEMA -->
+  <div class="modal-backdrop" id="modal-acesso" style="display: none;">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">🔑 Criar Acesso ao Sistema</h3>
+        <button type="button" class="btn-close" id="btn-close-acesso">✕</button>
+      </div>
+
+      <div style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 0.8rem 1rem; border-radius: 8px; font-size: 0.83rem; line-height: 1.45; margin-bottom: 1.15rem;">
+        Isto cria uma <strong>conta de login</strong> para um avaliador da equipe. Ele poderá
+        entrar no sistema e ver todos os alunos e avaliações do instituto. Crie apenas para
+        profissionais autorizados.
+      </div>
+
+      <form id="form-acesso">
+        <div class="form-group" style="margin-bottom: 0.8rem;">
+          <label for="acesso-nome">Nome Completo *</label>
+          <input type="text" id="acesso-nome" class="form-input" required placeholder="Ex: Prof. Dr. Carlos Mendes">
+        </div>
+        <div class="form-grid-3" style="margin-bottom: 0.8rem;">
+          <div class="form-group">
+            <label for="acesso-cref">CREF</label>
+            <input type="text" id="acesso-cref" class="form-input" placeholder="012345-G/SP">
+          </div>
+          <div class="form-group">
+            <label for="acesso-tel">Telefone</label>
+            <input type="text" id="acesso-tel" class="form-input" placeholder="(11) 98765-4321">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0.8rem;">
+          <label for="acesso-email">E-mail de acesso *</label>
+          <input type="email" id="acesso-email" class="form-input" required autocomplete="off" placeholder="professor@institutomoove.com.br">
+        </div>
+        <div class="form-group" style="margin-bottom: 0.4rem;">
+          <label for="acesso-senha">Senha provisória * <span style="font-weight: 400; color: var(--text-muted);">(mínimo 12 caracteres)</span></label>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="acesso-senha" class="form-input" required minlength="12" style="flex: 1; font-family: monospace;" autocomplete="off">
+            <button type="button" class="btn-act btn-outline btn-sm" id="btn-gerar-senha" style="white-space: nowrap;">🎲 Gerar</button>
+          </div>
+        </div>
+        <div style="font-size: 0.78rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 1.15rem;">
+          Anote a senha antes de salvar: ela não fica guardada em lugar nenhum e não pode ser
+          consultada depois. Entregue ao professor por um canal seguro e peça que a troque.
+        </div>
+
+        <div id="acesso-feedback" style="display: none; font-size: 0.83rem; padding: 0.65rem 0.85rem; border-radius: 6px; margin-bottom: 1rem;"></div>
+
+        <div class="modal-actions">
+          <button type="button" class="btn-act btn-outline" id="btn-cancel-acesso">Cancelar</button>
+          <button type="submit" class="btn-act btn-primary" id="btn-submit-acesso">Criar Acesso</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -4172,6 +4230,88 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
         if (!confirm('Sair desta conta neste aparelho?\n\nOs dados já sincronizados continuam na nuvem do instituto.')) return;
         sair();
       });
+      // Criar Acesso ao Sistema (chama a Edge Function)
+      function feedbackAcesso(texto, tom) {
+        const el = document.getElementById('acesso-feedback');
+        const cores = {
+          neutro:  ['#f8fafc', '#475569', '#cbd5e1'],
+          sucesso: ['#ecfdf5', '#065f46', '#a7f3d0'],
+          erro:    ['#fef2f2', '#991b1b', '#fecaca']
+        };
+        const [fundo, cor, borda] = cores[tom] || cores.neutro;
+        el.style.display = 'block';
+        el.style.background = fundo;
+        el.style.color = cor;
+        el.style.border = '1px solid ' + borda;
+        el.textContent = texto;
+      }
+
+      function gerarSenha() {
+        // Sem caracteres ambíguos (O/0, l/1): esta senha vai ser lida em voz
+        // alta ou copiada à mão de uma tela para outra.
+        const alfabeto = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%&*';
+        const bytes = new Uint32Array(16);
+        crypto.getRandomValues(bytes);
+        return Array.from(bytes, b => alfabeto[b % alfabeto.length]).join('');
+      }
+
+      document.getElementById('btn-gerar-senha').addEventListener('click', () => {
+        document.getElementById('acesso-senha').value = gerarSenha();
+      });
+
+      document.getElementById('btn-novo-acesso').addEventListener('click', () => {
+        document.getElementById('form-acesso').reset();
+        document.getElementById('acesso-senha').value = gerarSenha();
+        document.getElementById('acesso-feedback').style.display = 'none';
+        document.getElementById('modal-acesso').style.display = 'flex';
+      });
+
+      const fecharAcesso = () => { document.getElementById('modal-acesso').style.display = 'none'; };
+      document.getElementById('btn-close-acesso').addEventListener('click', fecharAcesso);
+      document.getElementById('btn-cancel-acesso').addEventListener('click', fecharAcesso);
+
+      document.getElementById('form-acesso').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const botao = document.getElementById('btn-submit-acesso');
+        const senha = document.getElementById('acesso-senha').value;
+        const email = document.getElementById('acesso-email').value.trim();
+
+        botao.disabled = true;
+        botao.textContent = 'Criando...';
+        feedbackAcesso('Criando acesso...', 'neutro');
+
+        try {
+          if (!tokenValido() && !(await renovarToken())) {
+            throw new Error('Sua sessão expirou. Entre novamente para criar acessos.');
+          }
+          const res = await fetch(SUPABASE_URL + '/functions/v1/criar-acesso', {
+            method: 'POST',
+            headers: {
+              apikey: SUPABASE_ANON,
+              Authorization: 'Bearer ' + appState.sessao.access_token,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              nome: document.getElementById('acesso-nome').value.trim(),
+              cref: document.getElementById('acesso-cref').value.trim(),
+              telefone: document.getElementById('acesso-tel').value.trim(),
+              email: email,
+              senha: senha
+            })
+          });
+          const dados = await res.json().catch(() => ({}));
+          if (!res.ok || !dados.ok) throw new Error(dados.erro || 'Não foi possível criar o acesso.');
+
+          feedbackAcesso('✅ Acesso criado para ' + email + '. Anote a senha antes de fechar.', 'sucesso');
+          botao.textContent = 'Acesso criado';
+          await syncNow();
+        } catch (err) {
+          feedbackAcesso('❌ ' + err.message, 'erro');
+          botao.disabled = false;
+          botao.textContent = 'Criar Acesso';
+        }
+      });
+
 
 
       // Botões de Backup (Exportar / Importar)

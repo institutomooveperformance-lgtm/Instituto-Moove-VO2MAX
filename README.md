@@ -132,15 +132,59 @@ importa: com o cadastro público aberto, qualquer pessoa poderia criar uma conta
 e ficar autenticada — mas sem uma linha em `professores` não enxerga nada. O
 papel `anon` não recebe privilégio algum.
 
-### Cadastrar um novo professor
+### Criar acesso para um novo professor
 
-1. No Supabase, **Authentication → Users → Add user**, marcando *Auto Confirm User*.
-2. Rode o bloco final de [`supabase/schema.sql`](supabase/schema.sql), que cria a
-   linha em `professores` para toda conta que ainda não tenha uma.
-3. Nome e CREF se ajustam pelo próprio app, em *Gestão de Professores*.
+Pelo próprio app: **Gestão de Professores & Avaliadores → 🔑 Criar Acesso ao
+Sistema**. Qualquer professor ativo pode fazer isso, sem depender do painel do
+Supabase.
 
-Para revogar um acesso, desmarque **Ativo** na tabela de professores do app, ou
-apague o usuário no painel do Supabase.
+Atenção à distinção: **"+ Adicionar Professor" não cria login.** Ele só
+disponibiliza o nome para assinar laudos. Quem dá acesso ao sistema é o botão
+"Criar Acesso ao Sistema".
+
+A senha provisória aparece uma única vez, na tela. Ela não fica guardada em
+lugar nenhum e não pode ser consultada depois — anote e entregue por um canal
+seguro. Se perder, crie outra pelo painel do Supabase.
+
+Para revogar, desmarque **Ativo** na tabela de professores: a política exige
+`ativo`, então o acesso cai na sincronização seguinte.
+
+### Por que criar login exige uma Edge Function
+
+Criar usuário é operação administrativa e exige a chave `service_role`, que
+ignora todo o RLS. Essa chave não pode viver no navegador — quem a obtivesse
+teria controle total sobre o histórico clínico dos alunos.
+
+A função [`supabase/functions/criar-acesso`](supabase/functions/criar-acesso/index.ts)
+roda no servidor do Supabase, onde a chave fica em variável de ambiente. Ela
+confere **no servidor** se quem chamou é um professor ativo antes de criar
+qualquer conta; nada que o cliente afirme sobre si mesmo é levado em conta.
+
+Um gatilho no banco (seção 4 do schema) congela a coluna `user_id` para
+chamadas vindas do app. Sem ele, qualquer professor poderia apontar o `user_id`
+de um colega para a própria conta, ou zerá-lo e derrubar o acesso dele. Só a
+Edge Function, que usa `service_role`, consegue alterar esse vínculo.
+
+### Publicar a Edge Function
+
+Necessário uma vez, e a cada alteração da função.
+
+Pela CLI:
+
+```sh
+npx supabase login
+npx supabase link --project-ref pbmveouilfkqnbyglyom
+npx supabase functions deploy criar-acesso
+```
+
+Ou pelo painel: **Edge Functions → Deploy a new function**, com o nome
+`criar-acesso`, colando o conteúdo do `index.ts`.
+
+Não é preciso configurar segredo algum: `SUPABASE_URL`, `SUPABASE_ANON_KEY` e
+`SUPABASE_SERVICE_ROLE_KEY` são injetadas automaticamente.
+
+Se o domínio do site mudar, atualize `ORIGENS_PERMITIDAS` no topo da função e
+publique de novo — senão o navegador bloqueia a chamada por CORS.
 
 ## Backup
 
