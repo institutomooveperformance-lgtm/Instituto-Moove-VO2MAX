@@ -853,10 +853,12 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
           </span>
         </div>
 
-        <!-- Botão Sincronização -->
-        <button type="button" class="btn-act btn-outline btn-sm" id="btn-open-sync">
-          ⚙️ Sincronização
-        </button>
+        <!-- Conta do avaliador -->
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span id="header-conta-email" style="font-size: 0.78rem; color: var(--text-muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
+          <button type="button" class="btn-act btn-outline btn-sm" id="btn-open-sync">⚙️ Conta</button>
+          <button type="button" class="btn-act btn-outline btn-sm" id="btn-sair-header">🚪 Sair</button>
+        </div>
       </div>
     </div>
   </header>
@@ -4222,14 +4224,26 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
         );
       });
 
-      document.getElementById('btn-sair').addEventListener('click', () => {
+      function confirmarSaida() {
         if (appState.testActive) {
           alert('Há um teste em andamento. Encerre o teste antes de sair da conta.');
           return;
         }
         if (!confirm('Sair desta conta neste aparelho?\n\nOs dados já sincronizados continuam na nuvem do instituto.')) return;
         sair();
-      });
+      }
+
+      document.getElementById('btn-sair').addEventListener('click', confirmarSaida);
+      document.getElementById('btn-sair-header').addEventListener('click', confirmarSaida);
+
+      // O e-mail no cabeçalho responde "com qual conta eu estou?" sem exigir
+      // abrir modal nenhum — a pergunta que aparece quando se usa o mesmo
+      // tablet com mais de um avaliador.
+      const emailCabecalho = document.getElementById('header-conta-email');
+      if (emailCabecalho && appState.sessao && appState.sessao.email) {
+        emailCabecalho.textContent = appState.sessao.email;
+        emailCabecalho.title = 'Conectado como ' + appState.sessao.email;
+      }
       // Criar Acesso ao Sistema (chama a Edge Function)
       function feedbackAcesso(texto, tom) {
         const el = document.getElementById('acesso-feedback');
