@@ -1,9 +1,21 @@
 <!DOCTYPE html>
-<html lang="pt-BR" data-theme="light">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Instituto Moove | Teste de VO₂ Máximo</title>
+  <script>
+    // Roda antes de qualquer estilo ser aplicado: se a escolha do usuário for
+    // lida depois da primeira pintura, quem prefere escuro vê um lampejo
+    // branco a cada carregamento. Sem escolha salva, nenhum atributo é posto
+    // e a preferência do sistema decide.
+    (function () {
+      try {
+        var t = localStorage.getItem('moove_tema');
+        if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t;
+      } catch (e) { /* armazenamento bloqueado: segue a preferência do sistema */ }
+    })();
+  </script>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="basecoat.cdn.min.css">
   <style>
@@ -116,20 +128,118 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
 </style>
   <style>
+    /* Paleta clara — o padrão. Todo o app fala por estes tokens; não há cor
+       fixa fora daqui, exceto a marca do WhatsApp e a paleta dos gráficos. */
     :root {
       --accent: #0f766e;
       --accent-hover: #115e59;
       --accent-soft: #f0fdfa;
       --accent-border: #99f6e4;
-      --border-subtle: #e2e8f0;
+      /* Texto sobre o accent. Existe porque no tema escuro o accent clareia e
+         passa a exigir texto escuro em cima, e não branco. */
+      --accent-contrast: #ffffff;
+
       --card-bg: #ffffff;
       --bg-page: #f8fafc;
+      --bg-subtle: #f8fafc;
+      --bg-inset: #f1f5f9;
+
+      --border-subtle: #e2e8f0;
+      --border-strong: #cbd5e1;
+
       --text-main: #0f172a;
+      --text-soft: #334155;
       --text-muted: #64748b;
+      --text-faint: #94a3b8;
+
       --success: #15803d;
+      --success-strong: #047857;
       --warning: #b45309;
       --danger: #b91c1c;
+
+      --ok-bg: #ecfdf5;    --ok-text: #065f46;    --ok-border: #a7f3d0;
+      --erro-bg: #fef2f2;  --erro-text: #991b1b;  --erro-border: #fecaca;
+      --aviso-bg: #fffbeb; --aviso-text: #92400e; --aviso-border: #fde68a;
+
+      --realce: #ccfbf1;
+      --sombra: rgba(15, 23, 42, 0.06);
     }
+
+    /* Paleta escura, definida uma vez e aplicada por dois caminhos: a
+       preferência do sistema, quando o usuário não escolheu nada, e a escolha
+       explícita, que vence em qualquer direção. O bloco aparece duas vezes
+       porque uma media query não pode ser dobrada dentro de uma lista de
+       seletores. */
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --accent: #2dd4bf;
+        --accent-hover: #5eead4;
+        --accent-soft: #10302c;
+        --accent-border: #115e59;
+        --accent-contrast: #05201d;
+
+        --card-bg: #161b22;
+        --bg-page: #0d1117;
+        --bg-subtle: #1a212b;
+        --bg-inset: #222b38;
+
+        --border-subtle: #2a3441;
+        --border-strong: #3d4a5c;
+
+        --text-main: #e6edf3;
+        --text-soft: #c2ccd8;
+        --text-muted: #9aa5b1;
+        --text-faint: #6e7a88;
+
+        --success: #4ade80;
+        --success-strong: #6ee7a8;
+        --warning: #e3b341;
+        --danger: #ff7b72;
+
+        --ok-bg: #0e2a1d;    --ok-text: #7ee2a8;    --ok-border: #1f6f43;
+        --erro-bg: #2d1517;  --erro-text: #ff9492;  --erro-border: #7d2f2f;
+        --aviso-bg: #2b2413; --aviso-text: #e3b341; --aviso-border: #6b5518;
+
+        --realce: #10302c;
+        --sombra: rgba(0, 0, 0, 0.45);
+      }
+    }
+
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --accent: #2dd4bf;
+      --accent-hover: #5eead4;
+      --accent-soft: #10302c;
+      --accent-border: #115e59;
+      --accent-contrast: #05201d;
+
+      --card-bg: #161b22;
+      --bg-page: #0d1117;
+      --bg-subtle: #1a212b;
+      --bg-inset: #222b38;
+
+      --border-subtle: #2a3441;
+      --border-strong: #3d4a5c;
+
+      --text-main: #e6edf3;
+      --text-soft: #c2ccd8;
+      --text-muted: #9aa5b1;
+      --text-faint: #6e7a88;
+
+      --success: #4ade80;
+      --success-strong: #6ee7a8;
+      --warning: #e3b341;
+      --danger: #ff7b72;
+
+      --ok-bg: #0e2a1d;    --ok-text: #7ee2a8;    --ok-border: #1f6f43;
+      --erro-bg: #2d1517;  --erro-text: #ff9492;  --erro-border: #7d2f2f;
+      --aviso-bg: #2b2413; --aviso-text: #e3b341; --aviso-border: #6b5518;
+
+      --realce: #10302c;
+      --sombra: rgba(0, 0, 0, 0.45);
+    }
+
+    :root[data-theme="light"] { color-scheme: light; }
 
     html, body {
       /* `clip`, e não `hidden`: evita a barra de rolagem horizontal sem
@@ -154,7 +264,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
     /* Header styling */
     .app-header {
-      background: #ffffff;
+      background: var(--card-bg);
       border-bottom: 1px solid var(--border-subtle);
       padding: 1rem 1.5rem;
       position: sticky;
@@ -212,19 +322,19 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       font-weight: 600;
       padding: 0.35rem 0.75rem;
       border-radius: 9999px;
-      background: #f1f5f9;
+      background: var(--bg-inset);
       color: var(--text-main);
       border: 1px solid var(--border-subtle);
     }
     .sync-status-badge.online {
-      background: #ecfdf5;
-      color: #065f46;
-      border-color: #a7f3d0;
+      background: var(--ok-bg);
+      color: var(--ok-text);
+      border-color: var(--ok-border);
     }
     .sync-status-badge.offline {
-      background: #fffbeb;
-      color: #92400e;
-      border-color: #fde68a;
+      background: var(--aviso-bg);
+      color: var(--aviso-text);
+      border-color: var(--aviso-border);
     }
 
     /* Container and grid */
@@ -242,7 +352,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       margin-bottom: 1.5rem;
     }
     .guide-step {
-      background: #ffffff;
+      background: var(--card-bg);
       border: 1px solid var(--border-subtle);
       border-radius: 10px;
       padding: 1.1rem;
@@ -257,7 +367,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       width: 26px;
       height: 26px;
       background: var(--accent);
-      color: #ffffff;
+      color: var(--card-bg);
       border-radius: 50%;
       display: inline-flex;
       align-items: center;
@@ -280,7 +390,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
     /* Sections */
     .card-section {
-      background: #ffffff;
+      background: var(--card-bg);
       border: 1px solid var(--border-subtle);
       border-radius: 12px;
       padding: 1.5rem;
@@ -293,7 +403,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       align-items: center;
       margin-bottom: 1.25rem;
       padding-bottom: 0.75rem;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid var(--bg-inset);
       flex-wrap: wrap;
       gap: 0.75rem;
     }
@@ -314,7 +424,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
     /* Test Monitor Hero Display */
     .monitor-box {
-      background: linear-gradient(145deg, #ffffff, #f0fdfa);
+      background: linear-gradient(145deg, var(--card-bg), var(--accent-soft));
       border: 1px solid var(--accent-border);
       border-radius: 12px;
       padding: 1.5rem;
@@ -334,7 +444,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       font-size: 1.1rem;
       font-weight: 700;
       color: var(--accent);
-      background: #ffffff;
+      background: var(--card-bg);
       padding: 0.4rem 1rem;
       border-radius: 8px;
       border: 1px solid var(--accent-border);
@@ -349,15 +459,15 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       margin-bottom: 1.25rem;
     }
     .stat-card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
+      background: var(--card-bg);
+      border: 1px solid var(--border-subtle);
       border-radius: 10px;
       padding: 1rem;
       text-align: center;
     }
     .stat-card.highlight {
       border-color: var(--accent);
-      background: #fcfdfd;
+      background: var(--card-bg);
     }
     .stat-label {
       font-size: 0.78rem;
@@ -411,7 +521,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       border: 1px solid var(--border-subtle);
       border-radius: 6px;
       font-size: 0.9rem;
-      background: #ffffff;
+      background: var(--card-bg);
       color: var(--text-main);
       transition: border-color 0.15s ease;
       font-family: inherit;
@@ -442,22 +552,22 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
     }
     .btn-primary {
       background: var(--accent);
-      color: #ffffff;
+      color: var(--accent-contrast);
     }
     .btn-primary:hover {
       background: var(--accent-hover);
     }
     .btn-outline {
-      background: #ffffff;
+      background: var(--card-bg);
       color: var(--text-main);
       border-color: var(--border-subtle);
     }
     .btn-outline:hover {
-      background: #f8fafc;
-      border-color: #cbd5e1;
+      background: var(--bg-subtle);
+      border-color: var(--border-strong);
     }
     .btn-outline-primary {
-      background: #ffffff;
+      background: var(--card-bg);
       color: var(--accent);
       border-color: var(--accent-border);
     }
@@ -466,12 +576,12 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       border-color: var(--accent);
     }
     .btn-danger {
-      background: #fef2f2;
+      background: var(--erro-bg);
       color: var(--danger);
-      border-color: #fecaca;
+      border-color: var(--erro-border);
     }
     .btn-danger:hover {
-      background: #fee2e2;
+      background: var(--erro-bg);
     }
     .btn-sm {
       padding: 0.35rem 0.65rem;
@@ -500,7 +610,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       text-align: left;
     }
     .data-table th {
-      background: #f8fafc;
+      background: var(--bg-subtle);
       color: var(--text-muted);
       font-weight: 600;
       padding: 0.75rem 0.9rem;
@@ -509,14 +619,14 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
     }
     .data-table td {
       padding: 0.7rem 0.9rem;
-      border-bottom: 1px solid #f1f5f9;
+      border-bottom: 1px solid var(--bg-inset);
       color: var(--text-main);
     }
     .data-table tbody tr:last-child td {
       border-bottom: none;
     }
     .data-table tbody tr:hover {
-      background: #fcfcfc;
+      background: var(--card-bg);
     }
 
     .badge-status {
@@ -526,9 +636,9 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       font-size: 0.75rem;
       font-weight: 600;
     }
-    .badge-comp { background: #dcfce7; color: #166534; }
-    .badge-part { background: #fef9c3; color: #854d0e; }
-    .badge-pend { background: #f1f5f9; color: #475569; }
+    .badge-comp { background: var(--ok-bg); color: var(--ok-text); }
+    .badge-part { background: var(--aviso-bg); color: var(--aviso-text); }
+    .badge-pend { background: var(--bg-inset); color: var(--text-soft); }
 
     /* Modals */
     .modal-backdrop {
@@ -543,7 +653,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       padding: 1rem;
     }
     .modal-box {
-      background: #ffffff;
+      background: var(--card-bg);
       border-radius: 14px;
       max-width: 650px;
       width: 100%;
@@ -581,7 +691,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
     }
     .btn-close:hover {
       color: var(--text-main);
-      background: #f1f5f9;
+      background: var(--bg-inset);
     }
 
     /* Normative Table Styling */
@@ -591,15 +701,31 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       padding: 0.5rem;
     }
     .norm-highlight {
-      background-color: #ccfbf1 !important;
+      background-color: var(--realce) !important;
       font-weight: 700;
-      color: #0f766e !important;
+      color: var(--accent) !important;
     }
 
     /* Print styles */
     @media print {
+      /* Laudo é sempre impresso claro: tinta escura em papel branco. Redefinir
+         os tokens aqui reverte a página inteira de uma vez, em vez de tratar
+         elemento por elemento. Os três seletores existem para igualar a
+         especificidade de :root[data-theme="dark"], que de outro modo venceria. */
+      :root, :root[data-theme="dark"], :root[data-theme="light"] {
+        --card-bg: #ffffff; --bg-page: #ffffff; --bg-subtle: #ffffff; --bg-inset: #f1f5f9;
+        --border-subtle: #e2e8f0; --border-strong: #cbd5e1;
+        --text-main: #0f172a; --text-soft: #334155; --text-muted: #475569; --text-faint: #64748b;
+        --accent: #0f766e; --accent-hover: #115e59; --accent-soft: #f0fdfa;
+        --accent-border: #99f6e4; --accent-contrast: #ffffff;
+        --success: #15803d; --success-strong: #047857; --warning: #b45309; --danger: #b91c1c;
+        --ok-bg: #ecfdf5; --ok-text: #065f46; --ok-border: #a7f3d0;
+        --erro-bg: #fef2f2; --erro-text: #991b1b; --erro-border: #fecaca;
+        --aviso-bg: #fffbeb; --aviso-text: #92400e; --aviso-border: #fde68a;
+        --realce: #ccfbf1; --sombra: rgba(15, 23, 42, 0.06);
+      }
       body {
-        background: #ffffff !important;
+        background: var(--card-bg) !important;
         color: #000000 !important;
       }
       .app-header, .guide-grid, #section-monitor, #section-cadastro, #section-estagios-form,
@@ -628,13 +754,13 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
       margin-bottom: 0.5rem;
-      background: #ffffff;
+      background: var(--card-bg);
     }
     details.clinical-guide summary {
       padding: 0.85rem 1rem;
       font-weight: 600;
       cursor: pointer;
-      background: #f8fafc;
+      background: var(--bg-subtle);
       border-radius: 8px;
       user-select: none;
       outline: none;
@@ -649,14 +775,14 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       padding: 1rem;
       font-size: 0.86rem;
       line-height: 1.6;
-      color: #334155;
+      color: var(--text-soft);
     }
 
     /* SVG chart containers */
     .chart-svg-wrap {
       width: 100%;
       height: 240px;
-      background: #ffffff;
+      background: var(--card-bg);
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
       padding: 10px;
@@ -853,6 +979,9 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
           </span>
         </div>
 
+        <button type="button" class="btn-act btn-outline btn-sm" id="btn-tema" data-botao-tema title="Alternar entre tema claro e escuro" aria-label="Alternar tema">
+          <span id="tema-icone" data-icone-tema>🌙</span>
+        </button>
         <!-- Conta do avaliador -->
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <span id="header-conta-email" style="font-size: 0.78rem; color: var(--text-muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
@@ -949,7 +1078,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         </div>
 
         <!-- CONFIGURAÇÃO DO PROTOCOLO -->
-        <div class="protocol-config-panel" style="background: #ffffff; border: 1px solid var(--accent-border); border-radius: 10px; padding: 0.9rem 1.15rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(15, 118, 110, 0.05);">
+        <div class="protocol-config-panel" style="background: var(--card-bg); border: 1px solid var(--accent-border); border-radius: 10px; padding: 0.9rem 1.15rem; margin-bottom: 1.25rem; box-shadow: 0 1px 3px rgba(15, 118, 110, 0.05);">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem;">
             <div style="font-size: 0.88rem; font-weight: 700; color: var(--accent); display: flex; align-items: center; gap: 0.4rem;">
               <span>⚙️ Configuração do Protocolo</span>
@@ -1000,7 +1129,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
           </div>
           <div class="stat-card">
             <div class="stat-label">Tempo Total Efetivo</div>
-            <div class="stat-val" id="monitor-tempo-total" style="color: #475569;">00:00</div>
+            <div class="stat-val" id="monitor-tempo-total" style="color: var(--text-soft);">00:00</div>
             <div class="stat-sub">Duração acumulada</div>
           </div>
         </div>
@@ -1019,7 +1148,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       </div>
 
       <!-- 5. REGISTRO DE DADOS DO ESTÁGIO -->
-      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1.25rem;">
+      <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1.25rem;">
         <h3 style="font-size: 1rem; font-weight: 700; margin-top: 0; margin-bottom: 1rem; color: var(--accent);">
           📝 Registro do Estágio Atual (<span id="registro-estagio-label">Estágio 1 - 8.0 km/h</span>)
         </h3>
@@ -1123,13 +1252,13 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         </div>
         <div class="stat-card">
           <div class="stat-label">Classificação Cooper/ACSM</div>
-          <div class="stat-val" id="res-classificacao" style="font-size: 1.35rem; color: #047857; margin-top: 0.4rem;">—</div>
+          <div class="stat-val" id="res-classificacao" style="font-size: 1.35rem; color: var(--success-strong); margin-top: 0.4rem;">—</div>
           <div class="stat-sub">Por idade e sexo</div>
         </div>
       </div>
 
       <!-- Protocolo de Recuperação -->
-      <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem;">
+      <div style="background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1rem;">
           <h3 style="font-size: 1rem; font-weight: 700; margin: 0; color: var(--text-main);">
             ⏱ Cronômetro de Recuperação Cardíaca (2 minutos ativos a 4,5 km/h)
@@ -1242,7 +1371,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       </div>
 
       <!-- SELEÇÃO DO ALUNO E AVALIAÇÃO -->
-      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem;">
+      <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem;">
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem;">
           <div class="form-group">
             <label for="envio-select-aluno">1. Selecionar Aluno / Atleta</label>
@@ -1293,7 +1422,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
           </div>
           <div class="stat-card">
             <div class="stat-label">Classificação</div>
-            <div class="stat-val" id="prev-classificacao" style="font-size: 1.15rem; color: #047857;">—</div>
+            <div class="stat-val" id="prev-classificacao" style="font-size: 1.15rem; color: var(--success-strong);">—</div>
             <div class="stat-sub">Cooper / ACSM</div>
           </div>
           <div class="stat-card">
@@ -1500,7 +1629,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         <button type="button" class="btn-close" id="btn-close-sync">✕</button>
       </div>
 
-      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
+      <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; margin-bottom: 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
           <div style="display: flex; align-items: center; gap: 0.6rem;">
             <span style="font-size: 0.82rem; font-weight: 600; color: var(--text-muted);">Status:</span>
@@ -1525,13 +1654,13 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
       <div id="sync-test-feedback" style="display: none; font-size: 0.82rem; padding: 0.6rem 0.85rem; border-radius: 6px; margin-bottom: 1rem;"></div>
 
-      <div style="background: #f0fdfa; border: 1px solid var(--accent-border); border-radius: 8px; padding: 0.85rem; font-size: 0.82rem; color: #115e59; line-height: 1.45; margin-bottom: 1.25rem;">
+      <div style="background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 8px; padding: 0.85rem; font-size: 0.82rem; color: var(--accent-hover); line-height: 1.45; margin-bottom: 1.25rem;">
         🔒 <strong>Como os dados ficam guardados:</strong> tudo é salvo primeiro neste aparelho e sincronizado
         com a nuvem do instituto em seguida. Se a internet cair no meio de um teste, o app continua
         funcionando normalmente e envia as alterações assim que a conexão voltar.
       </div>
 
-      <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+      <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem 1rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
         <div>
           <div style="font-size: 0.85rem; font-weight: 700; color: var(--text-main);">💾 Cópia de Segurança Local</div>
           <div style="font-size: 0.78rem; color: var(--text-muted);">Exporte ou importe um arquivo .json com toda a base.</div>
@@ -1553,7 +1682,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         <button type="button" class="btn-close" id="btn-close-acesso">✕</button>
       </div>
 
-      <div style="background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 0.8rem 1rem; border-radius: 8px; font-size: 0.83rem; line-height: 1.45; margin-bottom: 1.15rem;">
+      <div style="background: var(--aviso-bg); border: 1px solid var(--aviso-border); color: var(--aviso-text); padding: 0.8rem 1rem; border-radius: 8px; font-size: 0.83rem; line-height: 1.45; margin-bottom: 1.15rem;">
         Isto cria uma <strong>conta de login</strong> para um avaliador da equipe. Ele poderá
         entrar no sistema e ver todos os alunos e avaliações do instituto. Crie apenas para
         profissionais autorizados.
@@ -1602,7 +1731,12 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
   <!-- TELA DE LOGIN -->
   <div id="tela-login" style="display: none; position: fixed; inset: 0; z-index: 2000; background: var(--bg-page); align-items: center; justify-content: center; padding: 1rem;">
-    <div style="width: 100%; max-width: 380px; background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 14px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.08); padding: 2rem;">
+    <div style="width: 100%; max-width: 380px; background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 14px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.08); padding: 2rem;">
+      <div style="display: flex; justify-content: flex-end; margin-bottom: -0.5rem;">
+        <button type="button" class="btn-act btn-outline btn-sm" data-botao-tema aria-label="Alternar tema" style="min-height: 34px; padding: 0.3rem 0.6rem;">
+          <span data-icone-tema>🌙</span>
+        </button>
+      </div>
       <div style="text-align: center; margin-bottom: 1.5rem;">
         <div style="font-size: 1.3rem; font-weight: 800; color: var(--accent); letter-spacing: -0.02em;">INSTITUTO MOOVE</div>
         <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 0.2rem;">Teste de VO₂ Máximo</div>
@@ -1618,7 +1752,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
           <input type="password" id="login-senha" class="form-input" autocomplete="current-password" required placeholder="••••••••">
         </div>
 
-        <div id="login-erro" style="display: none; font-size: 0.82rem; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; border-radius: 6px; padding: 0.6rem 0.85rem; margin-bottom: 1rem;"></div>
+        <div id="login-erro" style="display: none; font-size: 0.82rem; background: var(--erro-bg); color: var(--erro-text); border: 1px solid var(--erro-border); border-radius: 6px; padding: 0.6rem 0.85rem; margin-bottom: 1rem;"></div>
 
         <button type="submit" class="btn-act btn-primary btn-lg" id="btn-login" style="width: 100%; justify-content: center;">
           Entrar
@@ -1737,7 +1871,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--accent); padding-bottom: 1rem; margin-bottom: 1.5rem;">
           <div>
             <div style="font-size: 1.4rem; font-weight: 800; color: var(--accent);">INSTITUTO MOOVE</div>
-            <div style="font-size: 0.95rem; font-weight: 600; color: #334155;">Relatório de Evolução Cardiorrespiratória & VO₂ Máximo</div>
+            <div style="font-size: 0.95rem; font-weight: 600; color: var(--text-soft);">Relatório de Evolução Cardiorrespiratória & VO₂ Máximo</div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">Protocolo Progressivo de Esteira Rolante (Rampa Escalonada +0,5 km/h / 2 min)</div>
           </div>
           <div style="text-align: right; font-size: 0.8rem; color: var(--text-muted);">
@@ -1746,7 +1880,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         </div>
 
         <!-- Ficha do Avaliado -->
-        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
+        <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem;">
           <div>
             <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">AVALIADO(A):</span>
             <div id="rel-aluno-nome" style="font-weight: 700; color: var(--text-main); font-size: 1rem;">—</div>
@@ -1803,7 +1937,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
             <div><strong>Instituto Moove</strong> — Fisiologia do Exercício & Avaliação Física</div>
             <div>Padrões ACSM (American College of Sports Medicine) & The Cooper Institute</div>
           </div>
-          <div style="text-align: right; min-width: 220px; border-top: 1px solid #94a3b8; padding-top: 0.4rem;">
+          <div style="text-align: right; min-width: 220px; border-top: 1px solid var(--text-faint); padding-top: 0.4rem;">
             <span id="rel-assinatura-avaliador" style="font-weight: 600; color: var(--text-main);">Prof. Responsável</span><br>
             <span>Assinatura do Fisiologista</span>
           </div>
@@ -1828,7 +1962,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         <div style="display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid var(--accent); padding-bottom: 1rem; margin-bottom: 1.25rem;">
           <div>
             <div style="font-size: 1.35rem; font-weight: 800; color: var(--accent);">INSTITUTO MOOVE</div>
-            <div style="font-size: 0.95rem; font-weight: 700; color: #1e293b;">Avaliação Fisiológica & Teste VO₂ Máximo</div>
+            <div style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">Avaliação Fisiológica & Teste VO₂ Máximo</div>
             <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.2rem;">Protocolo Progressivo de Esteira Rolante (Rampa Escalonada +0,5 km/h / 2 min)</div>
           </div>
           <div style="text-align: right; font-size: 0.82rem; color: var(--text-muted);">
@@ -1837,7 +1971,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         </div>
 
         <!-- Dados do Aluno -->
-        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem;">
+        <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 1rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.75rem;">
           <div>
             <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Aluno / Atleta</span>
             <div id="ind-aluno-nome" style="font-weight: 700; color: var(--text-main); font-size: 0.95rem;">—</div>
@@ -1861,25 +1995,25 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
           Resultados do Desfecho Máximo
         </h4>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
-          <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
+          <div style="background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
             <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Velocidade Final</div>
             <div id="ind-res-vel" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">0.0 km/h</div>
           </div>
-          <div style="background: #f0fdfa; border: 1px solid var(--accent-border); border-radius: 6px; padding: 0.65rem; text-align: center;">
+          <div style="background: var(--accent-soft); border: 1px solid var(--accent-border); border-radius: 6px; padding: 0.65rem; text-align: center;">
             <div style="font-size: 0.7rem; color: var(--accent); text-transform: uppercase; font-weight: 700;">VO₂ Máximo</div>
             <div id="ind-res-vo2" style="font-size: 1.3rem; font-weight: 800; color: var(--accent);">0.0 mL/kg/min</div>
           </div>
-          <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
+          <div style="background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
             <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">METs Máximo</div>
             <div id="ind-res-mets" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">0.0</div>
           </div>
-          <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
+          <div style="background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
             <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Duração Total</div>
             <div id="ind-res-duracao" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">00:00</div>
           </div>
-          <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
+          <div style="background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 0.65rem; text-align: center;">
             <div style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Classificação ACSM</div>
-            <div id="ind-res-classif" style="font-size: 1.15rem; font-weight: 800; color: #047857; margin-top: 0.15rem;">—</div>
+            <div id="ind-res-classif" style="font-size: 1.15rem; font-weight: 800; color: var(--success-strong); margin-top: 0.15rem;">—</div>
           </div>
         </div>
 
@@ -1910,7 +2044,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         <h4 style="font-size: 0.92rem; font-weight: 700; margin: 0 0 0.5rem 0; color: var(--text-main);">
           Cinética de Recuperação Cardíaca (2 min ativos a 4,5 km/h)
         </h4>
-        <div style="background: #f8fafc; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem;">
+        <div style="background: var(--bg-subtle); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0.75rem;">
           <div>
             <span style="font-size: 0.72rem; color: var(--text-muted); font-weight: 600;">FC Pico:</span>
             <div id="ind-rec-pico" style="font-weight: 700; color: var(--text-main); font-size: 1rem;">—</div>
@@ -1934,11 +2068,11 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         </div>
 
         <!-- Observações Finais do Avaliador -->
-        <div style="background: #ffffff; border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem;">
+        <div style="background: var(--card-bg); border: 1px solid var(--border-subtle); border-radius: 8px; padding: 0.85rem; margin-bottom: 1.25rem;">
           <div style="font-size: 0.76rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 0.35rem;">
             Observações Finais & Parecer do Avaliador Responsável
           </div>
-          <div id="ind-obs-finais" style="font-size: 0.85rem; color: #334155; line-height: 1.5; font-style: italic;">
+          <div id="ind-obs-finais" style="font-size: 0.85rem; color: var(--text-soft); line-height: 1.5; font-style: italic;">
             Sem observações adicionais.
           </div>
         </div>
@@ -1949,7 +2083,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
             <div><strong>Instituto Moove</strong> — Fisiologia do Exercício | Avaliador: <span id="ind-rodape-avaliador" style="font-weight: 600; color: var(--text-main);">—</span></div>
             <div>Diretrizes ACSM (American College of Sports Medicine) & The Cooper Institute</div>
           </div>
-          <div style="text-align: right; min-width: 200px; border-top: 1px solid #94a3b8; padding-top: 0.35rem;">
+          <div style="text-align: right; min-width: 200px; border-top: 1px solid var(--text-faint); padding-top: 0.35rem;">
             <span id="ind-assinatura-avaliador" style="font-weight: 600; color: var(--text-main);">Prof. Responsável</span><br>
             <span>Assinatura do Fisiologista</span>
           </div>
@@ -2895,12 +3029,12 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       tbody.innerHTML = filtrados.map(a => {
         const isSelected = a.id === appState.selectedAlunoId;
         return `
-          <tr style="${isSelected ? 'background: #f0fdfa; font-weight: 600;' : ''}">
+          <tr style="${isSelected ? 'background: var(--accent-soft); font-weight: 600;' : ''}">
             <td>
               ${isSelected ? '⭐ ' : ''}<strong>${escapeHtml(a.nome)}</strong>
             </td>
-            <td>${a.telefone ? escapeHtml(a.telefone) : '<span style="color:#94a3b8;">—</span>'}</td>
-            <td>${a.email ? escapeHtml(a.email) : '<span style="color:#94a3b8;">—</span>'}</td>
+            <td>${a.telefone ? escapeHtml(a.telefone) : '<span style="color:var(--text-faint);">—</span>'}</td>
+            <td>${a.email ? escapeHtml(a.email) : '<span style="color:var(--text-faint);">—</span>'}</td>
             <td>${a.idade} anos</td>
             <td>${escapeHtml(a.sexo)}</td>
             <td>${a.peso.toFixed(1)} kg</td>
@@ -3055,13 +3189,13 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         else if (st.status === 'Parcial') badgeClass = 'badge-part';
 
         return `
-          <tr style="${isCurrent ? 'background: #f0fdfa; font-weight: 600;' : ''}">
+          <tr style="${isCurrent ? 'background: var(--accent-soft); font-weight: 600;' : ''}">
             <td><strong>Estágio ${st.estagio}</strong></td>
             <td>${st.velocidade.toFixed(1)} km/h</td>
             <td>${st.mets.toFixed(1)} METs</td>
-            <td>${st.fc ? st.fc + ' bpm' : '<span style="color: #94a3b8;">—</span>'}</td>
-            <td>${st.borg !== null ? st.borg : '<span style="color: #94a3b8;">—</span>'}</td>
-            <td>${st.talkTest ? escapeHtml(st.talkTest) : '<span style="color: #94a3b8;">—</span>'}</td>
+            <td>${st.fc ? st.fc + ' bpm' : '<span style="color: var(--text-faint);">—</span>'}</td>
+            <td>${st.borg !== null ? st.borg : '<span style="color: var(--text-faint);">—</span>'}</td>
+            <td>${st.talkTest ? escapeHtml(st.talkTest) : '<span style="color: var(--text-faint);">—</span>'}</td>
             <td style="max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
               ${escapeHtml(st.obs || '—')}
             </td>
@@ -3325,9 +3459,9 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       if (!isNaN(pico) && !isNaN(fc60) && pico >= fc60) {
         const q1 = pico - fc60;
         let tag = 'Boa';
-        let color = '#15803d';
-        if (q1 < 6) { tag = 'Abaixo do Esperado'; color = '#b91c1c'; }
-        else if (q1 <= 11) { tag = 'Moderada'; color = '#b45309'; }
+        let color = 'var(--success)';
+        if (q1 < 6) { tag = 'Abaixo do Esperado'; color = 'var(--danger)'; }
+        else if (q1 <= 11) { tag = 'Moderada'; color = 'var(--warning)'; }
         d1.innerHTML = `${q1} bpm <span style="font-size: 0.8rem; font-weight: 600; color: ${color};">(${tag})</span>`;
       } else {
         d1.textContent = '—';
@@ -3335,7 +3469,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
       if (!isNaN(pico) && !isNaN(fc120) && pico >= fc120) {
         const q2 = pico - fc120;
-        d2.innerHTML = `${q2} bpm <span style="font-size: 0.8rem; font-weight: 600; color: #15803d;">(Recuperação 2 min)</span>`;
+        d2.innerHTML = `${q2} bpm <span style="font-size: 0.8rem; font-weight: 600; color: var(--success);">(Recuperação 2 min)</span>`;
       } else {
         d2.textContent = '—';
       }
@@ -3827,8 +3961,8 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
       gridSteps.forEach(val => {
         const y = padTop + chartH - ((val - minFC) / (maxFC - minFC)) * chartH;
         markup += `
-          <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="3,3" />
-          <text x="${padLeft - 8}" y="${y + 4}" fill="#94a3b8" font-size="11" font-family="sans-serif" text-anchor="end">${val}</text>
+          <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="var(--border-subtle)" stroke-width="1" stroke-dasharray="3,3" />
+          <text x="${padLeft - 8}" y="${y + 4}" fill="var(--text-faint)" font-size="11" font-family="sans-serif" text-anchor="end">${val}</text>
         `;
       });
 
@@ -3840,8 +3974,8 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
         const x = padLeft + i * stepX + stepX / 2;
         // Rótulo Estágio e Velocidade
         markup += `
-          <text x="${x}" y="${height - 18}" fill="#64748b" font-size="11" font-weight="600" font-family="sans-serif" text-anchor="middle">${d.label}</text>
-          <text x="${x}" y="${height - 5}" fill="#94a3b8" font-size="9" font-family="sans-serif" text-anchor="middle">${d.vel}</text>
+          <text x="${x}" y="${height - 18}" fill="var(--text-muted)" font-size="11" font-weight="600" font-family="sans-serif" text-anchor="middle">${d.label}</text>
+          <text x="${x}" y="${height - 5}" fill="var(--text-faint)" font-size="9" font-family="sans-serif" text-anchor="middle">${d.vel}</text>
         `;
 
         if (d.fc > 0) {
@@ -3854,20 +3988,20 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
       if (points.length > 0) {
         if (points.length > 1) {
           const pathD = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-          markup += `<path d="${pathD}" fill="none" stroke="#0f766e" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />`;
+          markup += `<path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />`;
         }
 
         // Círculos e Rótulos de FC
         points.forEach(p => {
           markup += `
-            <circle cx="${p.x}" cy="${p.y}" r="5" fill="#ffffff" stroke="#0f766e" stroke-width="3" />
-            <rect x="${p.x - 18}" y="${p.y - 24}" width="36" height="18" rx="4" fill="#0f766e" />
-            <text x="${p.x}" y="${p.y - 12}" fill="#ffffff" font-size="10" font-weight="700" font-family="sans-serif" text-anchor="middle">${p.fc}</text>
+            <circle cx="${p.x}" cy="${p.y}" r="5" fill="var(--card-bg)" stroke="var(--accent)" stroke-width="3" />
+            <rect x="${p.x - 18}" y="${p.y - 24}" width="36" height="18" rx="4" fill="var(--accent)" />
+            <text x="${p.x}" y="${p.y - 12}" fill="var(--card-bg)" font-size="10" font-weight="700" font-family="sans-serif" text-anchor="middle">${p.fc}</text>
           `;
         });
       } else {
         markup += `
-          <text x="${width / 2}" y="${height / 2}" fill="#94a3b8" font-size="13" font-family="sans-serif" text-anchor="middle">
+          <text x="${width / 2}" y="${height / 2}" fill="var(--text-faint)" font-size="13" font-family="sans-serif" text-anchor="middle">
             Insira os dados de FC nos estágios acima para visualizar a curva cronotrópica em tempo real.
           </text>
         `;
@@ -3926,7 +4060,7 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
 
       if (!testes || testes.length === 0) {
         svg.innerHTML = `
-          <text x="350" y="90" fill="#94a3b8" font-size="13" font-family="sans-serif" text-anchor="middle">
+          <text x="350" y="90" fill="var(--text-faint)" font-size="13" font-family="sans-serif" text-anchor="middle">
             Dados insuficientes para traçar curva histórica (mínimo de 1 avaliação necessária).
           </text>
         `;
@@ -3954,8 +4088,8 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
         const val = minVO2 + (i / steps) * (maxVO2 - minVO2);
         const y = padTop + chartH - (i / steps) * chartH;
         markup += `
-          <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="2,2" />
-          <text x="${padLeft - 8}" y="${y + 4}" fill="#94a3b8" font-size="10" font-family="sans-serif" text-anchor="end">${val.toFixed(0)}</text>
+          <line x1="${padLeft}" y1="${y}" x2="${width - padRight}" y2="${y}" stroke="var(--border-subtle)" stroke-width="1" stroke-dasharray="2,2" />
+          <text x="${padLeft - 8}" y="${y + 4}" fill="var(--text-faint)" font-size="10" font-family="sans-serif" text-anchor="end">${val.toFixed(0)}</text>
         `;
       }
 
@@ -3969,15 +4103,15 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
 
       if (points.length > 1) {
         const pathD = points.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
-        markup += `<path d="${pathD}" fill="none" stroke="#0f766e" stroke-width="3" stroke-linecap="round" />`;
+        markup += `<path d="${pathD}" fill="none" stroke="var(--accent)" stroke-width="3" stroke-linecap="round" />`;
       }
 
       points.forEach(p => {
         markup += `
-          <circle cx="${p.x}" cy="${p.y}" r="6" fill="#0f766e" stroke="#ffffff" stroke-width="2" />
-          <rect x="${p.x - 22}" y="${p.y - 24}" width="44" height="18" rx="4" fill="#0f766e" />
-          <text x="${p.x}" y="${p.y - 12}" fill="#ffffff" font-size="10" font-weight="700" font-family="sans-serif" text-anchor="middle">${p.vo2.toFixed(1)}</text>
-          <text x="${p.x}" y="${height - 8}" fill="#64748b" font-size="10" font-weight="600" font-family="sans-serif" text-anchor="middle">${p.date}</text>
+          <circle cx="${p.x}" cy="${p.y}" r="6" fill="var(--accent)" stroke="var(--card-bg)" stroke-width="2" />
+          <rect x="${p.x - 22}" y="${p.y - 24}" width="44" height="18" rx="4" fill="var(--accent)" />
+          <text x="${p.x}" y="${p.y - 12}" fill="var(--card-bg)" font-size="10" font-weight="700" font-family="sans-serif" text-anchor="middle">${p.vo2.toFixed(1)}</text>
+          <text x="${p.x}" y="${height - 8}" fill="var(--text-muted)" font-size="10" font-weight="600" font-family="sans-serif" text-anchor="middle">${p.date}</text>
         `;
       });
 
@@ -3994,6 +4128,46 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
     }
+    // --- TEMA CLARO / ESCURO ---
+    // Fica fora do bloco de inicialização do app porque a tela de login também
+    // tem seu próprio seletor: quem prefere escuro não deveria levar um clarão
+    // na cara antes de conseguir entrar.
+    function temaEfetivo() {
+      const escolhido = document.documentElement.dataset.theme;
+      if (escolhido === 'dark' || escolhido === 'light') return escolhido;
+      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    }
+
+    function pintarBotoesTema() {
+      const escuro = temaEfetivo() === 'dark';
+      // O ícone anuncia o destino do clique, não o estado atual: mostra o que a
+      // pessoa vai obter se apertar.
+      const icone = escuro ? '☀️' : '🌙';
+      const dica = escuro ? 'Mudar para tema claro' : 'Mudar para tema escuro';
+      document.querySelectorAll('[data-icone-tema]').forEach(el => { el.textContent = icone; });
+      document.querySelectorAll('[data-botao-tema]').forEach(el => { el.title = dica; });
+    }
+
+    function alternarTema() {
+      const novo = temaEfetivo() === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = novo;
+      try { localStorage.setItem('moove_tema', novo); } catch (e) { /* vale só nesta aba */ }
+      pintarBotoesTema();
+      // Os gráficos são SVG desenhado à mão, que lê as cores no momento do
+      // desenho — não acompanham a troca de tema sozinhos.
+      if (typeof drawFCChart === 'function' && appState.estagiosDados) drawFCChart();
+    }
+
+    function configurarTema() {
+      document.querySelectorAll('[data-botao-tema]').forEach(b => b.addEventListener('click', alternarTema));
+      pintarBotoesTema();
+      // Enquanto ninguém escolher, o app acompanha o sistema em tempo real,
+      // inclusive quando o aparelho entra no modo noturno sozinho.
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        if (!document.documentElement.dataset.theme) pintarBotoesTema();
+      });
+    }
+
     // O Supabase devolve as mensagens de erro em inglês e em jargão de API.
     // Quem lê esta tela é um professor no meio do expediente.
     function traduzErroLogin(msg) {
@@ -4038,6 +4212,7 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
 
     // INICIALIZAÇÃO DE EVENTOS
     document.addEventListener('DOMContentLoaded', () => {
+      configurarTema();
       configurarLogin();
       if (!temSessao()) {
         // Sem sessao o app nao inicializa: nao ha dados a mostrar, porque o
@@ -4190,9 +4365,9 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
         const el = document.getElementById('sync-test-feedback');
         if (!el) return;
         const cores = {
-          neutro:  ['#f8fafc', '#475569', '#cbd5e1'],
-          sucesso: ['#ecfdf5', '#065f46', '#a7f3d0'],
-          erro:    ['#fef2f2', '#991b1b', '#fecaca']
+          neutro:  ['var(--bg-subtle)', 'var(--text-soft)', 'var(--border-strong)'],
+          sucesso: ['var(--ok-bg)', 'var(--ok-text)', 'var(--ok-border)'],
+          erro:    ['var(--erro-bg)', 'var(--erro-text)', 'var(--erro-border)']
         };
         const [fundo, cor, borda] = cores[tom] || cores.neutro;
         el.style.display = 'block';
@@ -4248,9 +4423,9 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
       function feedbackAcesso(texto, tom) {
         const el = document.getElementById('acesso-feedback');
         const cores = {
-          neutro:  ['#f8fafc', '#475569', '#cbd5e1'],
-          sucesso: ['#ecfdf5', '#065f46', '#a7f3d0'],
-          erro:    ['#fef2f2', '#991b1b', '#fecaca']
+          neutro:  ['var(--bg-subtle)', 'var(--text-soft)', 'var(--border-strong)'],
+          sucesso: ['var(--ok-bg)', 'var(--ok-text)', 'var(--ok-border)'],
+          erro:    ['var(--erro-bg)', 'var(--erro-text)', 'var(--erro-border)']
         };
         const [fundo, cor, borda] = cores[tom] || cores.neutro;
         el.style.display = 'block';

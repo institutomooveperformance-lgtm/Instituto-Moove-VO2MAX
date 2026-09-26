@@ -97,6 +97,30 @@ As **tabelas normativas** de classificação (Cooper Institute / ACSM) e os
 **critérios de interrupção** do teste seguem as referências originais — o desvio
 acima vale só para a estimativa do VO₂.
 
+## Tema claro e escuro
+
+O botão 🌙 / ☀️ no cabeçalho alterna, e a escolha fica guardada por aparelho em
+`localStorage`. A tela de login tem o próprio seletor, para quem prefere escuro
+não levar um clarão antes de conseguir entrar.
+
+Sem escolha salva, o app segue a preferência do sistema operacional e acompanha
+mudanças em tempo real. Uma escolha explícita vence o sistema **nas duas
+direções** — tema claro num aparelho em modo noturno funciona, e vice-versa.
+
+Um script no `<head>` aplica o tema antes da primeira pintura. Sem isso, quem
+prefere escuro veria um lampejo branco a cada carregamento.
+
+### Se for mexer nas cores
+
+Não há cor fixa no app: tudo passa por tokens CSS definidos em `:root`, com a
+paleta escura sobrescrevendo os mesmos nomes. As únicas exceções deliberadas são
+o verde da marca do WhatsApp e a paleta categórica dos gráficos, que funcionam
+nos dois temas.
+
+**Laudos são sempre impressos claros.** O bloco `@media print` redefine os
+tokens para a paleta clara, revertendo a página inteira de uma vez — tinta
+escura em papel branco, independentemente do tema na tela.
+
 ## Acesso e sincronização
 
 O app exige **login por professor** e sincroniza com um projeto Supabase
