@@ -188,20 +188,15 @@ select id, nome, email, ativo, user_id from public.professores order by nome;
 create or replace function public.protege_vinculo_de_acesso()
 returns trigger
 language plpgsql
-security definer
-set search_path = public
+-- SEM security definer, de propósito: é justamente o papel de quem chama que
+-- precisa ser observado, e security definer o substituiria pelo dono da função.
 as $$
-declare
-  papel text := coalesce(
-    current_setting('request.jwt.claims', true)::jsonb ->> 'role',
-    ''
-  );
 begin
-  -- Só chamadas vindas do app carregam papel 'authenticated'. O SQL Editor do
-  -- painel roda como postgres (papel vazio) e a Edge Function usa service_role;
-  -- ambos precisam atravessar, senão o bloco de bootstrap da seção 3 não
-  -- conseguiria vincular o primeiro professor.
-  if papel in ('authenticated', 'anon') then
+  -- current_user é fato do Postgres, não interpretação de token: o PostgREST
+  -- executa SET LOCAL ROLE conforme a chave usada — 'authenticated' para o app,
+  -- 'service_role' para a Edge Function, 'postgres' para o SQL Editor. Ler as
+  -- claims do JWT para isso se mostrou pouco confiável na prática.
+  if current_user in ('authenticated', 'anon') then
     if tg_op = 'INSERT' then
       new.user_id := null;
     else
@@ -216,3 +211,15 @@ drop trigger if exists protege_vinculo on public.professores;
 create trigger protege_vinculo
   before insert or update on public.professores
   for each row execute function public.protege_vinculo_de_acesso();
+
+-- Reparo: religa qualquer professor que tenha ficado sem vínculo, casando pelo
+-- e-mail da conta de login. Roda daqui, onde current_user é postgres e o
+-- gatilho não interfere.
+update public.professores p
+set user_id = u.id
+from auth.users u
+where p.user_id is null
+  and lower(u.email) = lower(p.email);
+
+-- Confirmação: todo professor que deve entrar no sistema precisa de user_id.
+select id, nome, email, ativo, user_id from public.professores order by nome;

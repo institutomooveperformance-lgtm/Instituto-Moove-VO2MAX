@@ -93,6 +93,10 @@ Deno.serve(async (req: Request) => {
       return responder({ erro: msg || 'Não foi possível criar a conta.' }, 400);
     }
 
+    if (!nova.id) {
+      return responder({ erro: "A conta foi criada mas o servidor não devolveu o identificador." }, 500);
+    }
+
     // 5. Vincula ao registro de professor. Se já existe um com este e-mail, ele
     // é reaproveitado, para não duplicar o avaliador na lista de assinaturas.
     const respExiste = await fetch(
@@ -123,6 +127,22 @@ Deno.serve(async (req: Request) => {
       // numa próxima tentativa.
       await fetch(`${BASE}/auth/v1/admin/users/${nova.id}`, { method: 'DELETE', headers: admin });
       return responder({ erro: 'Não foi possível vincular o acesso. Nada foi salvo.' }, 500);
+    }
+
+    // 6. Confere que o vínculo realmente ficou gravado. Uma política ou um
+    // gatilho no banco pode descartar a coluna user_id em silêncio, e o
+    // resultado seria um professor que aparece na lista mas nunca consegue
+    // entrar — falha cara de diagnosticar depois.
+    const respConfere = await fetch(
+      `${BASE}/rest/v1/professores?id=eq.${encodeURIComponent(linha.id)}&select=user_id`,
+      { headers: admin },
+    );
+    const gravado = await respConfere.json();
+    if (!Array.isArray(gravado) || gravado[0]?.user_id !== nova.id) {
+      await fetch(`${BASE}/auth/v1/admin/users/${nova.id}`, { method: "DELETE", headers: admin });
+      return responder({
+        erro: "O vínculo de acesso não foi gravado — provavelmente um gatilho do banco o descartou. Nada foi salvo. Rode o schema.sql atualizado.",
+      }, 500);
     }
 
     return responder({ ok: true, nome: linha.nome, email });
