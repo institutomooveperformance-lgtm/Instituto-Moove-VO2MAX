@@ -155,6 +155,14 @@ revoke all on public.professores, public.alunos, public.avaliacoes, public.exclu
 -- app, em 'Gestão de Professores & Avaliadores', depois do primeiro login.
 -- ---------------------------------------------------------------------------
 
+-- Antes de recriar: remove lápides de exclusão dos ids que este bloco vai
+-- gerar. Sem isso, uma linha recriada aqui seria apagada de novo na primeira
+-- sincronização, porque o app propaga exclusões antigas — e o professor
+-- voltaria a ficar sem acesso, sem nada indicando o motivo.
+delete from public.excluidos
+where tipo = 'professores'
+  and registro_id in (select 'p_' || replace(id::text, '-', '') from auth.users);
+
 insert into public.professores (id, nome, cref, email, ativo, user_id)
 select
   'p_' || replace(u.id::text, '-', ''),
