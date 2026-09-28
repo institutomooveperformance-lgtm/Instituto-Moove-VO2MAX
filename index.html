@@ -272,6 +272,137 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       z-index: 50;
       box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
+
+    /* O cabeçalho é sticky: tudo que ele ocupa fica ocupado o tempo todo. Num
+       celular de 360px ele chegava a 46% da altura útil — quase metade da tela
+       permanentemente gasta com barra. Duas medidas: enxugar o que aparece em
+       tela pequena, e encolher ainda mais assim que a pessoa começa a rolar. */
+    .app-header {
+      transition: padding 0.18s ease;
+    }
+    .app-header .brand-title,
+    .app-header .btn-act {
+      transition: font-size 0.18s ease, min-height 0.18s ease, padding 0.18s ease;
+    }
+
+    /* Estado compacto — aplicado por JavaScript ao rolar. Some o que é
+       contexto (subtítulo, explicação do status, e-mail da conta) e fica o que
+       é ação: trocar avaliador, ver status, alternar tema, conta e sair. */
+    .app-header.compacto {
+      padding-top: 0.4rem;
+      padding-bottom: 0.4rem;
+    }
+    .app-header.compacto .brand-sub,
+    .app-header.compacto .brand-badge,
+    .app-header.compacto #sync-subtext,
+    .app-header.compacto #header-conta-email {
+      display: none;
+    }
+    .app-header.compacto .brand-title {
+      font-size: 1rem;
+    }
+    .app-header.compacto .btn-act {
+      min-height: 36px;
+      padding: 0.3rem 0.65rem;
+      font-size: 0.8rem;
+    }
+    .app-header.compacto .rotulo-acao {
+      display: none;
+    }
+    .app-header.compacto .header-inner {
+      gap: 0.5rem;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .app-header,
+      .app-header .brand-title,
+      .app-header .btn-act { transition: none; }
+    }
+
+    /* Em tela pequena o cabeçalho já nasce enxuto, sem depender de rolagem.
+       O texto que explica o status ocupava três linhas sozinho, e o e-mail da
+       conta empurrava os botões para mais uma — ambos continuam a um toque de
+       distância, dentro de ⚙️ Conta. */
+    @media (max-width: 820px) {
+      .app-header {
+        padding: 0.6rem 0.9rem;
+      }
+      .app-header .header-inner {
+        gap: 0.5rem;
+      }
+      .app-header .brand-sub,
+      .app-header #sync-subtext,
+      .app-header #header-conta-email {
+        display: none;
+      }
+      .app-header .brand-title {
+        font-size: 1.05rem;
+      }
+      .app-header .btn-act {
+        min-height: 38px;
+        padding: 0.35rem 0.7rem;
+        font-size: 0.82rem;
+      }
+      /* O status vira só a bolinha e duas palavras: a frase inteira não cabia
+         sem quebrar a linha dos botões. */
+      .app-header .sync-status-badge {
+        font-size: 0.72rem;
+        padding: 0.15rem 0.5rem;
+      }
+
+      /* Ao rolar, desfaz o empilhamento vertical que a regra de 768px aplica.
+         Aquele desenho é adequado para o cabeçalho aberto, mas empurrava o
+         compacto para cinco linhas — cada botão ocupando a largura inteira. */
+      .app-header.compacto .header-inner {
+        flex-direction: row;
+        align-items: center;
+        gap: 0.5rem;
+      }
+      .app-header.compacto .header-actions {
+        flex-direction: row;
+        align-items: center;
+        flex-wrap: nowrap;
+        width: auto;
+        gap: 0.4rem;
+      }
+      .app-header.compacto .header-actions > .form-group {
+        flex-direction: row !important;
+        align-items: center !important;
+      }
+      .app-header.compacto .header-actions .btn-act {
+        width: auto;
+      }
+      /* A marca sai de cena enquanto se rola: numa tela de 360px o seletor de
+         avaliador, o status e os três botões já consomem a linha inteira, e
+         quem está rolando a página sabe em que app está. Ela reaparece ao
+         voltar ao topo. */
+      .app-header.compacto .brand-title {
+        display: none;
+      }
+
+      /* Rolando em tela pequena, o cabeçalho vira uma faixa de ícones. O que
+         some é rótulo, não função: os botões continuam lá, com aria-label e
+         title, e voltam a exibir texto ao subir de volta ao topo. Sem isto o
+         cabeçalho quebrava em quatro linhas e comia um terço da tela. */
+      .app-header.compacto .rotulo-acao,
+      .app-header.compacto #sync-text {
+        display: none;
+      }
+      .app-header.compacto .brand-title {
+        font-size: 0.9rem;
+      }
+      /* Um mínimo, senão o nowrap espreme o seletor a ~40px e ele deixa de
+         mostrar qualquer nome. O avaliador precisa continuar trocável com a
+         página rolada: é durante o teste, lá embaixo, que isso é usado. */
+      .app-header.compacto #select-avaliador {
+        min-width: 88px;
+        max-width: 120px;
+        font-size: 0.78rem;
+      }
+      .app-header.compacto .header-actions {
+        gap: 0.4rem;
+      }
+    }
     .header-inner {
       max-width: 1320px;
       margin: 0 auto;
@@ -963,7 +1094,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       <div class="header-actions">
         <!-- Avaliador Selecionado -->
         <div class="form-group" style="flex-direction: row; align-items: center; gap: 0.4rem;">
-          <label for="select-avaliador" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Avaliador:</label>
+          <label for="select-avaliador" class="rotulo-acao" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;">Avaliador:</label>
           <select id="select-avaliador" class="form-select" style="padding: 0.35rem 0.6rem; font-size: 0.85rem; font-weight: 600;">
             <!-- Preenchido via JS -->
           </select>
@@ -985,8 +1116,8 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         <!-- Conta do avaliador -->
         <div style="display: flex; align-items: center; gap: 0.5rem;">
           <span id="header-conta-email" style="font-size: 0.78rem; color: var(--text-muted); max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
-          <button type="button" class="btn-act btn-outline btn-sm" id="btn-open-sync">⚙️ Conta</button>
-          <button type="button" class="btn-act btn-outline btn-sm" id="btn-sair-header">🚪 Sair</button>
+          <button type="button" class="btn-act btn-outline btn-sm" id="btn-open-sync">⚙️<span class="rotulo-acao"> Conta</span></button>
+          <button type="button" class="btn-act btn-outline btn-sm" id="btn-sair-header">🚪<span class="rotulo-acao"> Sair</span></button>
         </div>
       </div>
     </div>
@@ -4157,6 +4288,38 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
       // desenho — não acompanham a troca de tema sozinhos.
       if (typeof drawFCChart === 'function' && appState.estagiosDados) drawFCChart();
     }
+    // O cabeçalho é sticky, então o espaço que ele ocupa fica indisponível o
+    // tempo todo. Ao rolar, ele encolhe e devolve tela para o conteúdo.
+    function configurarCabecalhoCompacto() {
+      const cabecalho = document.querySelector('.app-header');
+      if (!cabecalho) return;
+      let compacto = false;
+      let agendado = false;
+
+      function avaliar() {
+        agendado = false;
+        const y = window.scrollY || document.documentElement.scrollTop || 0;
+        // Dois limites em vez de um: encolhe ao passar de 80px e só volta ao
+        // normal abaixo de 30px. Com um limite único, uma rolagem que parasse
+        // exatamente em cima dele faria o cabeçalho piscar entre os estados.
+        if (!compacto && y > 80) {
+          compacto = true;
+          cabecalho.classList.add('compacto');
+        } else if (compacto && y < 30) {
+          compacto = false;
+          cabecalho.classList.remove('compacto');
+        }
+      }
+
+      window.addEventListener('scroll', () => {
+        if (agendado) return;
+        agendado = true;
+        requestAnimationFrame(avaliar);
+      }, { passive: true });
+
+      avaliar();
+    }
+
 
     function configurarTema() {
       document.querySelectorAll('[data-botao-tema]').forEach(b => b.addEventListener('click', alternarTema));
@@ -4213,6 +4376,7 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
     // INICIALIZAÇÃO DE EVENTOS
     document.addEventListener('DOMContentLoaded', () => {
       configurarTema();
+      configurarCabecalhoCompacto();
       configurarLogin();
       if (!temSessao()) {
         // Sem sessao o app nao inicializa: nao ha dados a mostrar, porque o
