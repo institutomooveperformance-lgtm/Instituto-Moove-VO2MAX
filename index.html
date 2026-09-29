@@ -467,6 +467,14 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       color: var(--aviso-text);
       border-color: var(--aviso-border);
     }
+    /* Terceiro estado, visualmente distinto de 'offline' de propósito: aqui o
+       servidor está RECUSANDO os dados, não faltando conexão. Confundir os dois
+       já custou um teste inteiro gravado só num aparelho. */
+    .sync-status-badge.bloqueado {
+      background: var(--erro-bg);
+      color: var(--erro-text);
+      border-color: var(--erro-border);
+    }
 
     /* Container and grid */
     .app-main {
@@ -2524,39 +2532,63 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       }
     }
 
-    // ATUALIZAÇÃO VISUAL DE STATUS (APENAS STATUS AMIGÁVEL — NUNCA DADOS BRUTOS)
+    // Três estados, não dois. 'offline' é transitório e benigno: falta conexão,
+    // e o app reenvia sozinho. 'bloqueado' é o servidor RECUSANDO os dados —
+    // normalmente uma conta de login sem professor vinculado. Tratar os dois
+    // como a mesma coisa já fez um teste inteiro ficar preso num aparelho, com
+    // o app aparentando normalidade.
     function updateSyncStatusUI(status) {
-      const statusEl = document.getElementById('sync-status');
-      const dotEl = document.getElementById('sync-dot');
-      const txtEl = document.getElementById('sync-text');
-      const subtxtEl = document.getElementById('sync-subtext');
-      const mStatusEl = document.getElementById('modal-sync-status-badge');
-      const mDotEl = document.getElementById('modal-sync-dot');
-      const mTxtEl = document.getElementById('modal-sync-text');
-      const mLastTimeEl = document.getElementById('modal-last-sync-time');
+      const quando = formatLastSyncTimeDisplay(appState.lastSyncTimestamp);
 
-      const formattedTime = formatLastSyncTimeDisplay(appState.lastSyncTimestamp);
+      const estados = {
+        online: {
+          classe: 'online', ponto: '🟢', texto: 'Online — sincronizado',
+          detalhe: `Sincronizado (${quando})`
+        },
+        offline: {
+          classe: 'offline', ponto: '🟠', texto: 'Offline — dados locais',
+          detalhe: 'Alterações salvas neste aparelho; serão enviadas assim que a conexão voltar.'
+        },
+        bloqueado: {
+          classe: 'bloqueado', ponto: '🔴', texto: 'Sem permissão — NÃO está salvando na nuvem',
+          detalhe: 'Esta conta não está vinculada a um professor. Os dados ficam apenas neste aparelho. Avise o responsável pelo sistema.'
+        }
+      };
+      const e = estados[status] || estados.offline;
 
-      if (status === 'online') {
-        const text = 'Online — sincronizado';
-        if (statusEl) statusEl.className = 'sync-status-badge online';
-        if (dotEl) dotEl.textContent = '🟢';
-        if (txtEl) txtEl.textContent = text;
-        if (subtxtEl) subtxtEl.textContent = `Sincronizado (${formattedTime})`;
-        if (mStatusEl) mStatusEl.className = 'sync-status-badge online';
-        if (mDotEl) mDotEl.textContent = '🟢';
-        if (mTxtEl) mTxtEl.textContent = text;
-        if (mLastTimeEl) mLastTimeEl.textContent = `Última sincronização: ${formattedTime}`;
-      } else {
-        const text = 'Offline — dados locais';
-        if (statusEl) statusEl.className = 'sync-status-badge offline';
-        if (dotEl) dotEl.textContent = '🟠';
-        if (txtEl) txtEl.textContent = text;
-        if (subtxtEl) subtxtEl.textContent = 'Alterações salvas neste aparelho; serão enviadas assim que a conexão voltar.';
-        if (mStatusEl) mStatusEl.className = 'sync-status-badge offline';
-        if (mDotEl) mDotEl.textContent = '🟠';
-        if (mTxtEl) mTxtEl.textContent = text;
-        if (mLastTimeEl) mLastTimeEl.textContent = `Última sincronização: ${formattedTime}`;
+      const aplicar = (idBadge, idPonto, idTexto) => {
+        const badge = document.getElementById(idBadge);
+        const ponto = document.getElementById(idPonto);
+        const texto = document.getElementById(idTexto);
+        if (badge) badge.className = 'sync-status-badge ' + e.classe;
+        if (ponto) ponto.textContent = e.ponto;
+        if (texto) texto.textContent = e.texto;
+      };
+      aplicar('sync-status', 'sync-dot', 'sync-text');
+      aplicar('modal-sync-status-badge', 'modal-sync-dot', 'modal-sync-text');
+
+      const sub = document.getElementById('sync-subtext');
+      if (sub) sub.textContent = e.detalhe;
+      const badgeCabecalho = document.getElementById('sync-status');
+      if (badgeCabecalho) badgeCabecalho.title = e.detalhe;
+      const ultima = document.getElementById('modal-last-sync-time');
+      if (ultima) ultima.textContent = `Última sincronização: ${quando}`;
+
+      // No estado bloqueado o rótulo some quando o cabeçalho encolhe, e uma
+      // bolinha vermelha sozinha não explica nada. Um aviso por sessão é o
+      // preço de não perder o trabalho de um dia inteiro.
+      if (status === 'bloqueado' && !appState.avisouBloqueio) {
+        appState.avisouBloqueio = true;
+        setTimeout(() => {
+          alert(
+            'ATENÇÃO: os dados NÃO estão sendo salvos na nuvem.\n\n' +
+            'Esta conta de login não está vinculada a um professor, e o servidor ' +
+            'está recusando as gravações. Tudo que for cadastrado agora fica ' +
+            'somente neste aparelho.\n\n' +
+            'Antes de continuar, exporte um backup em ⚙️ Conta → Exportar, e ' +
+            'avise o responsável pelo sistema.'
+          );
+        }, 600);
       }
     }
 
@@ -2946,7 +2978,11 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         return true;
       } catch (e) {
         console.warn('Sincronização adiada (dados seguem salvos neste aparelho):', e.message);
-        updateSyncStatusUI('offline');
+        // 403 com 42501 e o Postgres recusando por politica de acesso: nao e
+        // falta de rede, e nao adianta esperar. Qualquer outra falha segue
+        // tratada como transitoria.
+        const semPermissao = /403/.test(e.message) || e.message.includes('42501');
+        updateSyncStatusUI(semPermissao ? 'bloqueado' : 'offline');
         return false;
       } finally {
         appState.isSyncing = false;
