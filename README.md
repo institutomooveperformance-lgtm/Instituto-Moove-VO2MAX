@@ -150,11 +150,13 @@ A chave anon do Supabase fica visível no `index.html`, que está num repositór
 público. **Isso é normal e esperado:** ela identifica o projeto, não autoriza
 nada. Quem protege os dados é o Row Level Security.
 
-As políticas não se baseiam em "estar autenticado", e sim em **"ser um professor
-cadastrado e ativo"**, verificado pela função `eh_avaliador()`. A diferença
-importa: com o cadastro público aberto, qualquer pessoa poderia criar uma conta
-e ficar autenticada — mas sem uma linha em `professores` não enxerga nada. O
-papel `anon` não recebe privilégio algum.
+As políticas liberam leitura e gravação para **qualquer conta de login**, sem
+exigir vínculo com um professor. Por isso o **cadastro público de contas precisa
+ficar desativado** (Authentication → Sign In / Providers → desmarcar *Allow new
+users to sign up*): com ele aberto, qualquer pessoa poderia criar uma conta com a
+chave anon e enxergar todos os alunos. As contas legítimas são criadas pelo
+botão *Criar acesso* (só professores ativos) ou pelo painel. O papel `anon` não
+recebe privilégio algum.
 
 ### Criar acesso para um novo professor
 

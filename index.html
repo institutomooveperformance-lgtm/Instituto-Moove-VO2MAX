@@ -2534,7 +2534,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
     // Três estados, não dois. 'offline' é transitório e benigno: falta conexão,
     // e o app reenvia sozinho. 'bloqueado' é o servidor RECUSANDO os dados —
-    // normalmente uma conta de login sem professor vinculado. Tratar os dois
+    // normalmente uma sessão de login expirada ou inválida. Tratar os dois
     // como a mesma coisa já fez um teste inteiro ficar preso num aparelho, com
     // o app aparentando normalidade.
     function updateSyncStatusUI(status) {
@@ -2551,7 +2551,7 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         },
         bloqueado: {
           classe: 'bloqueado', ponto: '🔴', texto: 'Sem permissão — NÃO está salvando na nuvem',
-          detalhe: 'Esta conta não está vinculada a um professor. Os dados ficam apenas neste aparelho. Avise o responsável pelo sistema.'
+          detalhe: 'O servidor recusou os dados desta conta. Os dados ficam apenas neste aparelho. Saia e entre de novo; se persistir, avise o responsável pelo sistema.'
         }
       };
       const e = estados[status] || estados.offline;
@@ -2582,11 +2582,10 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         setTimeout(() => {
           alert(
             'ATENÇÃO: os dados NÃO estão sendo salvos na nuvem.\n\n' +
-            'Esta conta de login não está vinculada a um professor, e o servidor ' +
-            'está recusando as gravações. Tudo que for cadastrado agora fica ' +
-            'somente neste aparelho.\n\n' +
-            'Antes de continuar, exporte um backup em ⚙️ Conta → Exportar, e ' +
-            'avise o responsável pelo sistema.'
+            'O servidor está recusando as gravações desta conta. Tudo que for ' +
+            'cadastrado agora fica somente neste aparelho.\n\n' +
+            'Antes de continuar, exporte um backup em ⚙️ Conta → Exportar. ' +
+            'Depois saia e entre de novo; se persistir, avise o responsável pelo sistema.'
           );
         }, 600);
       }
@@ -3222,12 +3221,21 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
     window.selecionarAluno = function(id) {
       const aluno = appState.alunos.find(a => a.id === id);
       if (!aluno) return;
+      if (id !== appState.selectedAlunoId && testeTemDados()) {
+        const anterior = appState.alunos.find(a => a.id === appState.selectedAlunoId);
+        if (!confirm(
+          `Há um teste não salvo${anterior ? ' de ' + anterior.nome : ''}. ` +
+          `Trocar para ${aluno.nome} descarta esses dados. Continuar?`
+        )) return;
+      }
+      if (id !== appState.selectedAlunoId) zerarTesteCompleto();
       appState.selectedAlunoId = id;
       document.getElementById('display-atleta-nome').textContent = aluno.nome;
       document.getElementById('display-atleta-detalhes').textContent = `(${aluno.idade} anos, ${aluno.sexo}, ${aluno.peso}kg, ${aluno.altura}m)`;
       renderAlunosTable(document.getElementById('input-busca-aluno').value);
       destacarTabelaNormativa(aluno);
       atualizarCalculosDesfecho();
+      renderEnvioSection();
     };
 
     // DESTAQUE DA FAIXA ETÁRIA NA TABELA NORMATIVA
@@ -3482,6 +3490,38 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
       }
     }
 
+    function zerarEstagios() {
+      if (appState.timerInterval) clearInterval(appState.timerInterval);
+      appState.testActive = false;
+      appState.tempoRestanteNoEstagio = appState.config.protocolo.tempoEstagio;
+      appState.tempoTotalEfetivo = 0;
+      appState.estagioAtualIndex = 1;
+      appState.estagiosDados = buildEmptyEstagios();
+      document.getElementById('btn-timer-toggle').innerHTML = '▶ Iniciar Cronômetro';
+      document.getElementById('monitor-tempo').textContent = formatTimeMMSS(appState.tempoRestanteNoEstagio);
+      document.getElementById('monitor-tempo-total').textContent = '00:00';
+      updateMonitorHeader();
+      renderEstagiosTable();
+      atualizarCalculosDesfecho();
+    }
+
+    // Cada teste começa do zero: estágios, cronômetro, recuperação e
+    // observações. Sem isto, o teste seguinte herdava tudo do anterior e era
+    // gravado no novo aluno com os dados de quem testou antes.
+    function zerarTesteCompleto() {
+      document.getElementById('form-estagio-dados').reset();
+      document.getElementById('input-obs-finais').value = '';
+      resetRecTimer(); // também limpa FC pico, 60s e 120s
+      zerarEstagios();
+    }
+
+    function testeTemDados() {
+      return appState.tempoTotalEfetivo > 0 ||
+        appState.estagiosDados.some(s => s.fc !== null || s.status !== 'Pendente') ||
+        ['input-fc-pico', 'input-fc-60s', 'input-fc-120s', 'input-obs-finais']
+          .some(id => document.getElementById(id).value.trim() !== '');
+    }
+
     function encerrarTeste() {
       if (appState.testActive) {
         clearInterval(appState.timerInterval);
@@ -3725,9 +3765,10 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
 
       appState.avaliacoes.unshift(novaAvaliacao);
       saveStorage();
+      zerarTesteCompleto();
       renderHistorico();
       renderEnvioSection();
-      alert('Avaliação de VO₂ Máximo gravada com sucesso no histórico!');
+      alert(`Avaliação de VO₂ Máximo de ${aluno.nome} gravada com sucesso no histórico! O teste foi zerado para o próximo aluno.`);
     }
 
     // HISTÓRICO DE AVALIAÇÕES
@@ -4530,18 +4571,7 @@ Instituto Moove — Fisiologia do Exercício & Avaliação Física`;
       document.getElementById('btn-encerrar-teste').addEventListener('click', encerrarTeste);
       document.getElementById('btn-reset-estagios').addEventListener('click', () => {
         if (!confirm('Deseja zerar os dados de todos os estágios do teste atual?')) return;
-        if (appState.timerInterval) clearInterval(appState.timerInterval);
-        appState.testActive = false;
-        appState.tempoRestanteNoEstagio = appState.config.protocolo.tempoEstagio;
-        appState.tempoTotalEfetivo = 0;
-        appState.estagioAtualIndex = 1;
-        appState.estagiosDados = buildEmptyEstagios();
-        document.getElementById('btn-timer-toggle').innerHTML = '▶ Iniciar Cronômetro';
-        document.getElementById('monitor-tempo').textContent = formatTimeMMSS(appState.tempoRestanteNoEstagio);
-        document.getElementById('monitor-tempo-total').textContent = '00:00';
-        updateMonitorHeader();
-        renderEstagiosTable();
-        atualizarCalculosDesfecho();
+        zerarEstagios();
       });
 
       // Recuperação

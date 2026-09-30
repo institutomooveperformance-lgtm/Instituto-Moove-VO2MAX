@@ -92,10 +92,16 @@ create table if not exists public.config (
 -- ATENÇÃO: a chave anon fica visível no código do app, que é público. Ela não
 -- é segredo e não precisa ser. Quem protege os dados é o RLS abaixo.
 --
--- O cadastro público de contas está ABERTO neste projeto. Por isso as
--- políticas NÃO se baseiam em "estar autenticado" — se baseiam em "ser um
--- professor cadastrado e ativo". Alguém que crie uma conta por fora fica
--- autenticado, mas não enxerga uma única linha.
+-- Qualquer conta de login lê e grava os dados, sem precisar ser professor.
+-- Isso SÓ é seguro com o cadastro público de contas DESATIVADO
+-- (Authentication → Sign In / Providers → desmarcar 'Allow new users to sign
+-- up'). Com ele aberto, qualquer pessoa criaria uma conta usando a chave anon
+-- e enxergaria todos os alunos. As contas legítimas nascem pela Edge Function
+-- 'criar-acesso' (restrita a professores ativos) ou pelo painel — ambos
+-- continuam funcionando com o cadastro público fechado.
+--
+-- eh_avaliador() segue existindo: não autoriza mais o acesso aos dados, mas
+-- documenta quem é professor ativo, o critério usado por 'criar-acesso'.
 -- ---------------------------------------------------------------------------
 
 create or replace function public.eh_avaliador()
@@ -125,10 +131,11 @@ begin
   foreach t in array array['professores','alunos','avaliacoes','excluidos','config'] loop
     execute format('drop policy if exists avaliadores_leem on public.%I', t);
     execute format('drop policy if exists avaliadores_acessam on public.%I', t);
+    execute format('drop policy if exists logados_acessam on public.%I', t);
     -- FOR ALL já cobre select, insert, update e delete.
     execute format(
-      'create policy avaliadores_acessam on public.%I for all to authenticated '
-      'using (public.eh_avaliador()) with check (public.eh_avaliador())', t);
+      'create policy logados_acessam on public.%I for all to authenticated '
+      'using (auth.uid() is not null) with check (auth.uid() is not null)', t);
   end loop;
 end $$;
 
