@@ -2551,7 +2551,13 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         },
         bloqueado: {
           classe: 'bloqueado', ponto: '🔴', texto: 'Sem permissão — NÃO está salvando na nuvem',
-          detalhe: 'O servidor recusou os dados desta conta. Os dados ficam apenas neste aparelho. Saia e entre de novo; se persistir, avise o responsável pelo sistema.'
+          detalhe: 'O servidor recusou os dados desta conta. Os dados ficam apenas neste aparelho. Saia e entre de novo; se persistir, avise o responsável pelo sistema.' +
+            (appState.ultimoErroSync ? ' Detalhe: ' + appState.ultimoErroSync : '')
+        },
+        falha: {
+          classe: 'bloqueado', ponto: '🔴', texto: 'Erro ao sincronizar — tentando de novo',
+          detalhe: 'Parte dos dados não chegou à nuvem e fica apenas neste aparelho até resolver. ' +
+            'Detalhe: ' + (appState.ultimoErroSync || 'desconhecido')
         }
       };
       const e = estados[status] || estados.offline;
@@ -2917,59 +2923,120 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
     // Sincroniza nos dois sentidos. A regra de conflito não mudou: segue sendo
     // mergeColecao(), com o registro de 'atualizadoEm' mais recente vencendo.
     // O que mudou foi apenas o transporte.
-    async function syncNow() {
-      if (!temSessao() || appState.isSyncing) return false;
-      appState.isSyncing = true;
+    // Envia linhas em lote; se o lote for recusado, reenvia uma a uma. Sem isso,
+    // um único registro problemático impedia o envio de todos os outros, a
+    // cada rodada, para sempre — e o aparelho ficava ilhado sem aviso claro.
+    async function enviarLinhas(tipo, linhas, falhas) {
+      if (!linhas.length) return;
+      const enviar = corpo => supa(tipo + '?on_conflict=id', {
+        method: 'POST',
+        headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
+        body: JSON.stringify(corpo)
+      });
       try {
-        // 1. Lápides primeiro, nos dois sentidos. Aplicar as exclusões antes de
-        // mesclar impede que um registro apagado em outro aparelho ressuscite
-        // nesta mesma rodada, vindo do aparelho que ainda o tinha.
+        await enviar(linhas);
+      } catch (e) {
+        if (!/^\d{3} /.test(e.message)) throw e; // rede ou sessão: aborta a rodada
+        for (const linha of linhas) {
+          try { await enviar([linha]); }
+          catch (e2) { falhas.push(`${tipo} "${linha.nome || linha.aluno_nome || linha.id}": ${e2.message}`); }
+        }
+      }
+    }
+
+    function renderTudoAposSync() {
+      saveStorage(false);
+      renderAlunosTable((document.getElementById('input-busca-aluno') || {}).value || '');
+      renderProfessores();
+      renderHistorico();
+      renderEnvioSection();
+    }
+
+    async function syncNow() {
+      if (appState.isSyncing) return false;
+      if (!temSessao()) {
+        appState.ultimoErroSync = 'Sessão expirada. Saia e entre novamente para voltar a sincronizar.';
+        updateSyncStatusUI('falha');
+        return false;
+      }
+      appState.isSyncing = true;
+      const falhas = [];
+      try {
+        // 1. Lápides remotas primeiro. Aplicar as exclusões antes de mesclar
+        // impede que um registro apagado em outro aparelho ressuscite nesta
+        // mesma rodada, vindo do aparelho que ainda o tinha.
         const excRemotas = await supa('excluidos?select=tipo,registro_id');
         excRemotas.forEach(e => registrarExclusao(e.tipo, e.registro_id));
 
+        // 2. Puxa e mescla TUDO antes de enviar qualquer coisa, e já mostra na
+        // tela. Assim o que existe na nuvem aparece neste aparelho mesmo que o
+        // envio de algum registro local falhe logo adiante.
+        for (const tipo of COLECOES) {
+          const remotos = (await supa(tipo + '?select=*')).map(paraApp[tipo]);
+          appState[tipo] = mergeColecao(appState[tipo], remotos, appState.excluidos[tipo]);
+        }
+        renderTudoAposSync();
+
+        // 3. Envia lápides e registros. Cada etapa falha sozinha, sem derrubar
+        // as seguintes.
         const lapides = [];
         COLECOES.forEach(tipo => {
           (appState.excluidos[tipo] || []).forEach(id => lapides.push({ tipo: tipo, registro_id: id }));
         });
         if (lapides.length) {
-          await supa('excluidos?on_conflict=tipo,registro_id', {
-            method: 'POST',
-            headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
-            body: JSON.stringify(lapides)
-          });
-        }
-
-        // 2. Puxa, mescla e devolve cada coleção.
-        for (const tipo of COLECOES) {
-          const remotos = (await supa(tipo + '?select=*')).map(paraApp[tipo]);
-          appState[tipo] = mergeColecao(appState[tipo], remotos, appState.excluidos[tipo]);
-          const linhas = appState[tipo].map(paraLinha[tipo]);
-          if (linhas.length) {
-            await supa(tipo + '?on_conflict=id', {
+          try {
+            await supa('excluidos?on_conflict=tipo,registro_id', {
               method: 'POST',
-              headers: { Prefer: 'resolution=merge-duplicates,return=minimal' },
-              body: JSON.stringify(linhas)
+              headers: { Prefer: 'resolution=ignore-duplicates,return=minimal' },
+              body: JSON.stringify(lapides)
             });
+          } catch (e) {
+            if (!/^\d{3} /.test(e.message)) throw e;
+            falhas.push('exclusões: ' + e.message);
           }
         }
 
-        // 3. Apaga no servidor o que está marcado como excluído. Alunos levam
+        // Excluir um aluno mantém as avaliações dele arquivadas no aparelho,
+        // mas no banco o cascade as apaga junto. Reenviá-las apontando para o
+        // aluno inexistente violava a chave estrangeira e travava a
+        // sincronização inteira. Sem o aluno, a avaliação segue arquivada com
+        // aluno_id nulo — o nome continua em aluno_nome.
+        const idsAlunos = new Set(appState.alunos.map(a => a.id));
+        for (const tipo of COLECOES) {
+          let linhas = appState[tipo].map(paraLinha[tipo]);
+          if (tipo === 'avaliacoes') {
+            linhas = linhas.map(l => (l.aluno_id && !idsAlunos.has(l.aluno_id)) ? Object.assign({}, l, { aluno_id: null }) : l);
+          }
+          await enviarLinhas(tipo, linhas, falhas);
+        }
+
+        // 4. Apaga no servidor o que está marcado como excluído. Alunos levam
         // junto suas avaliações, por cascade declarado no schema.
         for (const tipo of COLECOES) {
           const ids = appState.excluidos[tipo] || [];
           if (!ids.length) continue;
           const lista = ids.map(id => '"' + id + '"').join(',');
-          await supa(tipo + '?id=in.(' + encodeURIComponent(lista) + ')', {
-            method: 'DELETE', headers: { Prefer: 'return=minimal' }
-          });
+          try {
+            await supa(tipo + '?id=in.(' + encodeURIComponent(lista) + ')', {
+              method: 'DELETE', headers: { Prefer: 'return=minimal' }
+            });
+          } catch (e) {
+            if (!/^\d{3} /.test(e.message)) throw e;
+            falhas.push(`exclusão de ${tipo}: ${e.message}`);
+          }
         }
 
-        saveStorage(false);
-        renderAlunosTable((document.getElementById('input-busca-aluno') || {}).value || '');
-        renderProfessores();
-        renderHistorico();
-        renderEnvioSection();
+        renderTudoAposSync();
 
+        if (falhas.length) {
+          console.warn('Sincronização parcial:', falhas);
+          appState.ultimoErroSync = falhas.join(' | ');
+          const semPermissao = falhas.some(f => /: 403 |42501/.test(f));
+          updateSyncStatusUI(semPermissao ? 'bloqueado' : 'falha');
+          return false;
+        }
+
+        appState.ultimoErroSync = '';
         const agora = new Date().toISOString();
         appState.lastSyncTimestamp = agora;
         localStorage.setItem('moove_ultima_sync', agora);
@@ -2977,11 +3044,17 @@ table.shell-table tbody tr:hover { background: color-mix(in srgb, var(--accent) 
         return true;
       } catch (e) {
         console.warn('Sincronização adiada (dados seguem salvos neste aparelho):', e.message);
+        appState.ultimoErroSync = e.message;
         // 403 com 42501 e o Postgres recusando por politica de acesso: nao e
-        // falta de rede, e nao adianta esperar. Qualquer outra falha segue
-        // tratada como transitoria.
-        const semPermissao = /403/.test(e.message) || e.message.includes('42501');
-        updateSyncStatusUI(semPermissao ? 'bloqueado' : 'offline');
+        // falta de rede, e nao adianta esperar. Erro com codigo HTTP e o
+        // servidor recusando; sem codigo (fetch falhou) e falta de rede.
+        const semPermissao = /^403/.test(e.message) || e.message.includes('42501');
+        if (!temSessao()) {
+          appState.ultimoErroSync = 'Sessão expirada. Saia e entre novamente para voltar a sincronizar.';
+        }
+        const status = semPermissao ? 'bloqueado'
+          : (/^\d{3} /.test(e.message) || !temSessao()) ? 'falha' : 'offline';
+        updateSyncStatusUI(status);
         return false;
       } finally {
         appState.isSyncing = false;
